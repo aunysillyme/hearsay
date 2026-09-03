@@ -628,14 +628,8 @@ const COL = { blue: "#1E40FF", pink: "#7A3FE0", purple: "#7A3FE0", ink: "#14121A
 /* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
 const P = [
   ["header", "crown", "pink", "left:14px;top:-4px", -14, null, null, false],
-  ["#s-home .card", "arrow", "purple", "right:40px;top:-38px", -150, "start here!!", "above", true],
-  ["footer", "cat", "ink", "right:20px;top:-32px", 0, "the cat heard it first", "above", true],
+  ["footer", "cat", "ink", "right:20px;top:-32px", 0, null, null, true],
   ["footer", "plant", "green", "left:12px;top:-40px", 4, null, null, true],
-  ["#s-seed .card", "arrowdown", "pink", "right:30px;top:-46px", 10, "be specific!", "above", true],
-  ["#s-pass .card", "star", "pink", "right:16px;top:-30px", 18, "no peeking!!", "below", true],
-  ["#s-recall .card", "sparkle", "pink", "right:16px;top:-30px", 18, "think back...", "below", true],
-  ["#ladround", "star", "blue", "right:16px;top:-30px", 14, "word for word!", "below", true],
-  ["s-reveal", "arrow", "pink", "left:230px;top:-6px", 200, "who bent it?", "below", true],
 ];
 P.forEach(([sc, d, col, pos, rot, cap, side, wide]) => {
   const host = sc.startsWith("#") || sc === "footer" || sc === "header" ? document.querySelector(sc) : document.getElementById(sc); if (!host) return; if (getComputedStyle(host).position === "static") host.style.position = "relative";
