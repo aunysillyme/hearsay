@@ -378,6 +378,7 @@ async function poll() {
 
 /* ---------- screens ---------- */
 function render(v) {
+  S.view = v;
   if (v.me < 0 && v.phase !== "lobby") { toast("That room already started without you."); leave(); return; }
   if (v.phase === "lobby") return renderLobby(v);
   if (v.phase === "seed") { if (!v.starter) return renderWait(v, `${v.starterName} is writing the rumor.`); if (v.seeded) return renderWait(v, "Your rumor is out."); $("seedcrew").textContent = "On the line with you: " + v.players.filter((p) => !p.me).map((p) => p.name + (p.bot ? " (" + p.bio + ")" : "")).join(", ") + "."; return show("s-seed"); }
