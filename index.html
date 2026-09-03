@@ -146,13 +146,12 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 <!-- HOME -->
 <section class="screen on" id="s-home">
   <h1>Every rumor has a chain of custody.<br><mark>This one shows it.</mark></h1>
-  <p class="lede">Two games about the same thing: what your memory does to a sentence. <b>The telephone game:</b> you start a rumor and it passes through everyone in the room, one at a time. Everyone gets <b>one look</b> at what reached them, then retells it from memory. At the end, every version is laid out, every change is tagged <span class="stamp amber">exaggerated</span> <span class="stamp red">dropped</span> or <span class="stamp violet">invented</span>, and each one is pinned to the person who made it. <b>The memory ladder:</b> the whole room sees one sentence for a few seconds and types it back; accuracy is the score, and the levels climb until the line breaks.</p>
+  <p class="lede">Start a rumor. It passes through everyone, one look each, retold from memory. At the end you see exactly who <span class="stamp amber">exaggerated</span> <span class="stamp red">dropped</span> or <span class="stamp violet">invented</span> what.</p>
   <div class="card">
     <div class="row">
       <input id="name" placeholder="Your name" maxlength="24" style="max-width:240px" autocomplete="nickname">
       <button class="big" id="b-solo">Play it now with the gossips</button>
     </div>
-    <p class="mute" style="margin-top:8px">Solo takes about two minutes: you start one rumor, four gossips with known habits pass everything around, and you get the full record.</p>
     <div class="row" style="margin-top:14px">
       <button class="alt" id="b-solo-ladder">Or: the memory ladder (solo · 1v1 · group)</button>
     </div>
@@ -163,13 +162,8 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
       <button class="alt" id="b-join">Join</button>
     </div>
   </div>
-  <div class="line" id="homeline"></div>
-  <div class="steps">
-    <div class="card"><b>1. One look</b>The version that reached you shows for twelve seconds, then it is gone, and the line gets faster every hop. Pasting is off. What you pass on is what you remember.</div>
-    <div class="card"><b>2. Every hop kept</b>One rumor, one line. The room keeps every version and hands you only the one that reached you. Nobody sees the chain until it is finished.</div>
-    <div class="card"><b>3. The record</b>First, a memory test: retype the first message that ever reached you. Then original beside final, hop by hop: what got bigger, what fell off, what appeared from nowhere, and who did it.</div>
-  </div>
-  <p class="mute">3 to 6 in a room. Whoever presses start writes the rumor; it visits everyone else once and comes back at the reveal. Short on people? Seat a gossip.</p>
+  <div class="line" id="homeline" style="margin-top:18px"></div>
+
 </section>
 
 <!-- LOBBY -->
