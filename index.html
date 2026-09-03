@@ -627,32 +627,18 @@ const D = {
 const COL = { blue: "#1E40FF", pink: "#F26A1B", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
 /* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
 const P = [
-  ["s-home", "crown", "pink", "left:-8px;top:-34px", -14, null, null, false],
-  ["s-home", "sparkle", "blue", "right:6%;top:-6px", 10, null, null, false],
-  ["s-home", "star", "pink", "right:16%;top:44px", 20, null, null, true],
-  ["#s-home .card", "arrow", "purple", "right:18px;top:46px", -150, "start here!!", "below", true],
-  ["#s-home .steps .card:nth-child(1)", "sparkle", "pink", "right:10px;top:8px", 14, null, null, false],
-  ["#s-home .steps .card:nth-child(2)", "headphones", "purple", "right:8px;top:6px", -10, null, null, false],
-  ["#s-home .steps .card:nth-child(3)", "mug", "blue", "right:10px;top:6px", 8, "coffee = fuel", "below", false],
-  ["footer", "cat", "ink", "right:16px;top:-30px", 0, "the cat heard it first", "above", true],
-  ["footer", "plant", "green", "left:8px;top:-40px", 4, null, null, true],
+  ["header", "crown", "pink", "left:14px;top:-4px", -14, null, null, false],
+  ["#s-home .card", "arrow", "purple", "right:22px;top:40px", -150, "start here!!", "below", true],
+  ["footer", "cat", "ink", "right:20px;top:-32px", 0, "the cat heard it first", "above", true],
+  ["footer", "plant", "green", "left:12px;top:-40px", 4, null, null, true],
   ["#s-seed .card", "arrowdown", "pink", "right:30px;top:-46px", 10, "be specific!", "above", true],
-  ["s-seed", "sparkle", "purple", "left:-6px;top:0", -8, null, null, true],
   ["#s-pass .card", "star", "pink", "right:16px;top:-30px", 18, "no peeking!!", "below", true],
-  ["s-pass", "headphones", "blue", "right:-6px;top:0", -14, null, null, true],
-  ["#s-pass .card", "heart", "purple", "left:-30px;bottom:60px", 12, null, null, true],
-  ["s-wait", "loop", "purple", "right:6%;top:0", 0, "waiting is part of it", "below", true],
   ["#s-recall .card", "sparkle", "pink", "right:16px;top:-30px", 18, "think back...", "below", true],
   ["#ladround", "star", "blue", "right:16px;top:-30px", 14, "word for word!", "below", true],
-  ["s-lobby", "crown", "pink", "right:6%;top:-16px", 12, null, null, true],
-  ["#s-lobby .card", "plant", "green", "right:12px;bottom:8px", -4, null, null, true],
-  ["s-reveal", "arrow", "pink", "left:220px;top:-6px", 200, "who bent it?", "below", true],
-  ["s-reveal", "star", "blue", "right:2%;top:10px", -12, null, null, true],
-  ["s-reveal", "sparkle", "pink", "right:8%;top:60px", 24, null, null, true],
-  ["#ledger", "heart", "blue", "right:-30px;top:-34px", -10, null, null, true],
+  ["s-reveal", "arrow", "pink", "left:230px;top:-6px", 200, "who bent it?", "below", true],
 ];
 P.forEach(([sc, d, col, pos, rot, cap, side, wide]) => {
-  const host = sc.startsWith("#") || sc === "footer" ? document.querySelector(sc) : document.getElementById(sc); if (!host) return; if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  const host = sc.startsWith("#") || sc === "footer" || sc === "header" ? document.querySelector(sc) : document.getElementById(sc); if (!host) return; if (getComputedStyle(host).position === "static") host.style.position = "relative";
   const el = document.createElement("div"); el.className = "dd" + (wide ? " wide" : ""); el.style.cssText = pos;
   const inner = `<div style="transform:rotate(${rot}deg)">${D[d](COL[col])}</div>`;
   const c = cap ? `<div class="cap ${col === "pink" ? "pink" : col === "blue" ? "blue" : ""}" style="transform:rotate(${(rot % 7) - 3}deg)">${cap}</div>` : "";
@@ -660,7 +646,7 @@ P.forEach(([sc, d, col, pos, rot, cap, side, wide]) => {
   host.appendChild(el);
 });
 /* faint construction lines behind the big headline, like a pencil grid */
-document.querySelectorAll("h1").forEach((h) => { const s = document.createElement("div"); s.className = "scrib"; s.style.cssText = "left:-20px;right:-20px;top:-6px;height:100%"; s.innerHTML = `<svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" stroke="#1E40FF" stroke-width=".3" fill="none"><path d="M0 30 L100 28 M0 62 L100 60 M0 94 L100 92"/></svg>`; h.style.position = "relative"; h.appendChild(s); });
+[].forEach((h) => { const s = document.createElement("div"); s.className = "scrib"; s.style.cssText = "left:-20px;right:-20px;top:-6px;height:100%"; s.innerHTML = `<svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" stroke="#1E40FF" stroke-width=".3" fill="none"><path d="M0 30 L100 28 M0 62 L100 60 M0 94 L100 92"/></svg>`; h.style.position = "relative"; h.appendChild(s); });
 })();
 </script>
 </body>
