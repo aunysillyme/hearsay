@@ -214,7 +214,7 @@ export class Room {
         try {
           const res = await this.env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
             messages: [
-              { role: "system", content: "You are a gossip columnist writing the closing line of a report on how a rumor changed hands. Two sentences, dry and specific. Use ONLY the facts you are given: name who exaggerated what, who dropped what, who invented what. Never add a fact that is not listed." },
+              { role: "system", content: "You are a gossip columnist closing a report on how a rumor changed hands. Write exactly two short sentences. Sentence one: the single biggest change and who made it. Sentence two: what the group now believes that was never in the original. Use ONLY the listed facts, quote the exact words, never add a fact that is not listed." },
               { role: "user", content: facts },
             ],
             max_tokens: 160,

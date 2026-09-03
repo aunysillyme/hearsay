@@ -22,9 +22,10 @@
   html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45}
   body{background-image:radial-gradient(rgba(23,20,15,.035) 1px,transparent 1px);background-size:14px 14px}
   a{color:inherit}
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;max-width:960px;margin:0 auto;padding:18px 20px 6px}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:960px;margin:0 auto;padding:18px 20px 6px}
   .wordmark{font-family:var(--serif);font-size:28px;letter-spacing:-.5px;text-decoration:none;font-weight:700}
-  .wordmark small{font-family:var(--sans);font-size:12px;color:var(--mute);font-weight:400;letter-spacing:.08em;text-transform:uppercase;margin-left:10px}
+  .wordmark small{font-family:var(--sans);font-size:12px;color:var(--mute);font-weight:400;letter-spacing:.08em;text-transform:uppercase;margin-left:10px;white-space:nowrap}
+  @media (max-width:520px){.wordmark small{display:none}}
   .roomchip{font-family:var(--mono);font-size:13px;color:var(--mute);display:none;gap:10px;align-items:center}
   .roomchip b{color:var(--ink);letter-spacing:.12em}
   .roomchip button{padding:4px 8px;font-size:12px}
@@ -150,6 +151,7 @@
 <section class="screen" id="s-seed">
   <h2>Start a rumor.</h2>
   <p>Specifics drift best. Put in a name, a number, a place, a time. One or two sentences.</p>
+  <p class="mute" id="seedcrew"></p>
   <div class="card">
     <textarea id="seedtext" maxlength="500" placeholder="Priya said the landlord is raising rent by $75 in March, but only for the two units facing the street."></textarea>
     <div class="row" style="margin-top:10px"><button id="b-seed">Send it down the line</button> <span class="mute">It goes to the next person as written. After that, it is on its own.</span></div>
@@ -239,7 +241,7 @@ async function poll() {
 function render(v) {
   if (v.me < 0 && v.phase !== "lobby") { toast("That room already started without you."); leave(); return; }
   if (v.phase === "lobby") return renderLobby(v);
-  if (v.phase === "seed") return v.seeded ? renderWait(v, "Your rumor is out.") : show("s-seed");
+  if (v.phase === "seed") { if (v.seeded) return renderWait(v, "Your rumor is out."); $("seedcrew").textContent = "On the line with you: " + v.players.filter((p) => !p.me).map((p) => p.name + (p.bot ? " (" + p.bio + ")" : "")).join(", ") + "."; return show("s-seed"); }
   if (v.phase === "play") return (!v.task || v.task.passed) ? renderWait(v) : renderPass(v);
   if (v.phase === "reveal") return renderReveal(v);
 }
@@ -279,6 +281,7 @@ function stopGlance() { clearInterval(S.glance); S.glance = null; }
 /* ---------- the drift analysis (mechanical: it cannot hallucinate) ---------- */
 const STOP = new Set("the a an and to of in on at for is was were it its that this with by from but so or i he she they we you me my his her their our said says heard told be been has had have will would there here then than as into about".split(" "));
 const INTENS = new Set("very huge massive enormous everyone everybody all every never always literally insane crazy thousands hundreds millions totally completely worst best entire whole giant terrible horrible amazing screaming furious destroyed disaster chaos forever nobody none absolutely wild unbelievable ruined".split(" "));
+const stem = (w) => w.replace(/'s$/, "").replace(/(ing|ed|es|s)$/, "");
 const tok = (t) => t.split(/\s+/).filter(Boolean).map((d) => ({ d, n: d.toLowerCase().replace(/^[^a-z0-9$]+|[^a-z0-9%]+$/g, "") })).filter((x) => x.n);
 const nums = (ts) => ts.map((x) => x.n.replace(/[$,]/g, "")).filter((n) => /^\d+(\.\d+)?%?$/.test(n)).map((n) => parseFloat(n));
 function lcsOps(a, b) {
@@ -291,17 +294,18 @@ function lcsOps(a, b) {
 }
 function analyseHop(origT, prevT, curT) {
   const ops = lcsOps(prevT, curT);
-  const origSet = new Set(origT.map((x) => x.n));
+  const origSet = new Set(origT.map((x) => stem(x.n)));
   const pn = nums(prevT), cn = nums(curT);
   const bigger = new Set(); cn.forEach((c, k) => { if (pn[k] !== undefined && c > pn[k]) bigger.add(String(c)); });
   const dropped = [], invented = [], exag = [], reworded = [];
+  const moved = new Set(ops.filter(([op]) => op === "+").map(([, t]) => stem(t.n)));
   const marked = ops.map(([op, t]) => {
     if (op === "=") return esc(t.d);
-    if (op === "-") { if (!STOP.has(t.n)) dropped.push(t.d); return `<del>${esc(t.d)}</del>`; }
+    if (op === "-") { if (moved.has(stem(t.n))) return `<del style="opacity:.45">${esc(t.d)}</del>`; if (!STOP.has(t.n)) dropped.push(t.d); return `<del>${esc(t.d)}</del>`; }
     const bare = t.n.replace(/[$,%]/g, "");
     if (INTENS.has(t.n) || (bigger.has(bare) && /^\d/.test(bare))) { exag.push(t.d); return `<ins class="exag">${esc(t.d)}</ins>`; }
     if (STOP.has(t.n)) return `<ins class="add">${esc(t.d)}</ins>`;
-    if (!origSet.has(t.n)) { invented.push(t.d); return `<ins class="inv">${esc(t.d)}</ins>`; }
+    if (!origSet.has(stem(t.n))) { invented.push(t.d); return `<ins class="inv">${esc(t.d)}</ins>`; }
     reworded.push(t.d); return `<ins class="add">${esc(t.d)}</ins>`;
   }).join(" ");
   return { dropped, invented, exag, reworded, marked };
