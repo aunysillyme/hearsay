@@ -1,4 +1,4 @@
-# hearsay
+# SAY IT
 
 **A rumor's chain of custody.** Pass a message down the line. Everyone gets one look at what reached them, then retells it from memory. At the end every version is laid out, every change is tagged exaggerated, dropped or invented, and each one is pinned to the person who made it.
 

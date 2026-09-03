@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hearsay · a rumor's chain of custody</title>
+<title>SAY IT · a rumor's chain of custody</title>
 <meta name="description" content="Pass a message down the line. Everyone gets one look, retells it from memory, and at the end every change is tagged exaggerated, dropped or invented, and pinned to whoever made it.">
-<meta property="og:title" content="hearsay">
+<meta property="og:title" content="SAY IT">
 <meta property="og:description" content="A rumor's chain of custody. Pass a message down the line, then see exactly who bent it.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://aunysillyme.github.io/hearsay/">
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap">
 <style>
-/* HEARSAY in Sketchy: a bright white sketchbook page. Loose colored pencil,
+/* SAY IT in Sketchy: a bright white sketchbook page. Loose colored pencil,
    hand-lettered captions, doodles scattered like an illustrator's overflow.
    Palette from the Sketchy spec: cobalt + magenta on white, pink and purple
    handwriting. Exhibits stay typewriter mono: they are the evidence, the
@@ -138,7 +138,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 </head>
 <body>
 <header>
-  <a class="wordmark" href="./">hearsay <small>a rumor's chain of custody</small></a>
+  <a class="wordmark" href="./">SAY IT <small>a rumor's chain of custody</small></a>
   <div class="roomchip" id="roomchip">room <b id="chipcode"></b> <button class="quiet" id="chipcopy">copy link</button> <button class="quiet" id="chipleave">leave</button></div>
 </header>
 <main>
@@ -259,7 +259,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 </section>
 
 </main>
-<footer>hearsay · built live for Camp AI, Season 2 Episode 8 · <a href="https://github.com/aunysillyme/hearsay">source</a> · one HTML file, one Cloudflare Worker, one Durable Object, $0 to run.</footer>
+<footer>SAY IT · built live for Camp AI, Season 2 Episode 8 · <a href="https://github.com/aunysillyme/hearsay">source</a> · one HTML file, one Cloudflare Worker, one Durable Object, $0 to run.</footer>
 <div id="modepick" class="card" hidden style="position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:20;max-width:520px;width:calc(100% - 32px);box-shadow:6px 6px 0 var(--ink)">
   <h2 style="margin-top:0">The memory ladder. Pick a mode.</h2>
   <div class="row"><button id="m-solo">Solo</button><span class="mute">just you, climb as high as you can</span></div>
@@ -564,7 +564,7 @@ async function narrate(c, ch, an) {
   catch (e) { if (el) el.innerHTML = `<small>The gossip columnist</small><span class="mute">The columnist is off tonight. The diff above stands on its own.</span>`; }
 }
 function recordMarkdown() {
-  const { v, analyses } = S.record; let md = `# hearsay · room ${v.code}\n\n`;
+  const { v, analyses } = S.record; let md = `# SAY IT · room ${v.code}\n\n`;
   v.chains.forEach((ch, c) => { const an = analyses[c]; md += `## Rumor ${c + 1} (started by ${ch.seedBy}) · ${an.fid}% survived\n\n- Original (${ch.versions[0].by}): ${ch.versions[0].text}\n`; an.hops.forEach((h, i) => { md += `- Hop ${i + 1} (${h.by}): ${h.text}` + (h.exag.length ? ` · exaggerated: ${h.exag.join(", ")}` : "") + (h.dropped.length ? ` · dropped: ${h.dropped.join(", ")}` : "") + (h.invented.length ? ` · invented: ${h.invented.join(", ")}` : "") + "\n"; }); md += `\n${mechanicalNarration(ch, an)}\n\n`; });
   return md;
 }

@@ -1,4 +1,4 @@
-/* hearsay - the room worker.
+/* SAY IT - the room worker.
 
    One Durable Object per room, addressed by name, so idFromName(CODE) is the
    whole room system. No database, no schema.
