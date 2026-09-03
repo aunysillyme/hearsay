@@ -97,6 +97,53 @@ function mutate(text, persona, seed) {
   return text.replace(/\d+/, (m) => String(Number(m) + 1 + pick(3))).replace(/\bsaid\b/, "told me");
 }
 
+
+/* The memory ladder: one sentence for the whole room, scored on recall. The
+   sentence is built from slots so every level is fresh and nobody can have
+   seen it before; length grows with the level, the glance shrinks. */
+const L_NAMES = ["Nadia", "Marcus", "Priya", "Jordan", "Lena", "Sam", "Theo", "Amara", "Diego", "Yuki", "Omar", "Zoe"];
+const L_PLACES = ["on Elm Street", "at the 5th Avenue bakery", "in the office kitchen", "at the Denver airport", "on floor 3", "behind the library", "at the Riverside gym", "in the parking garage", "at the night market", "on the rooftop"];
+const L_TIMES = ["at 2pm", "on Tuesday", "next Monday", "in March", "at 6:45am", "on the 14th", "last Friday", "in October", "at midnight", "around noon"];
+const L_THINGS = ["a tray of samosas", "two blue umbrellas", "a box of forty donuts", "the wrong keys", "a birthday cake", "three parking tickets", "a Netflix script", "a broken espresso machine", "twelve orange cones", "a signed guitar"];
+const L_VERBS = ["found", "lost", "returned", "hid", "photographed", "borrowed", "counted", "dropped", "delivered", "sold"];
+const L_NUMS = [3, 7, 12, 19, 24, 40, 52, 75, 120, 300];
+const L_TAILS = ["and nobody believed it", "but only for the two street-facing units", "and it was all over the group chat", "which the landlord denies", "and the receipt says $NUM", "so the meeting moved to Thursday", "and the cat watched the whole thing", "and the fine was $NUM", "before the rain started", "while the alarm was still going"];
+function rng(seed) { let x = (seed * 2654435761) >>> 0 || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
+function sentenceFor(level, seed) {
+  const r = rng(seed + level * 101); const pick = (a) => a[Math.floor(r() * a.length)];
+  const num = () => String(pick(L_NUMS));
+  const clause = () => `${pick(L_NAMES)} ${pick(L_VERBS)} ${pick(L_THINGS)} ${pick(L_PLACES)} ${pick(L_TIMES)}`;
+  let s = clause();
+  if (level >= 2) s += ", " + pick(L_TAILS).replace("$NUM", num());
+  s += ".";
+  if (level >= 3) s += ` ${pick(L_NAMES)} says it was actually ${num()}.`;
+  if (level >= 5) s += ` Then ${clause()}${level >= 6 ? ", " + pick(L_TAILS).replace("$NUM", num()) : ""}.`;
+  if (level >= 8) s += ` ${pick(L_NAMES)} counted ${num()} and ${pick(L_NAMES)} counted ${num()}.`;
+  if (level >= 10) s += ` Nobody mentioned ${pick(L_THINGS)} ${pick(L_PLACES)}.`;
+  return s;
+}
+const L_STOP = new Set("the a an and to of in on at for is was were it its that this with by from but so or".split(" "));
+const ltok = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9$:\s]/g, " ").split(/\s+/).filter(Boolean);
+function lcsLen(a, b) { const m = b.length; let prev = new Array(m + 1).fill(0); for (let i = 1; i <= a.length; i++) { const cur = new Array(m + 1).fill(0); for (let j = 1; j <= m; j++) cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]); prev = cur; } return prev[m]; }
+function accuracy(target, said) {
+  const T = ltok(target), S = ltok(said);
+  if (!T.length) return 0;
+  if (T.join(" ") === S.join(" ")) return 100;
+  const lcs = lcsLen(T, S);
+  const extra = S.filter((w) => !L_STOP.has(w) && !T.includes(w)).length;
+  return Math.max(0, Math.round(100 * lcs / T.length - extra * 4));
+}
+function botRecall(text, persona, level, seed) {
+  const r = rng(seed); const words = text.split(" ");
+  const drop = (n) => { for (let i = 0; i < n && words.length > 4; i++) words.splice(1 + Math.floor(r() * (words.length - 2)), 1); };
+  if (persona === "faithful") drop(level < 4 ? 0 : Math.floor(level / 3));
+  else if (persona === "forgetful") drop(2 + level);
+  else if (persona === "embellisher") { drop(Math.floor(level / 2)); for (let i = 0; i < words.length; i++) if (/^\$?\d+/.test(words[i])) { words[i] = words[i].replace(/\d+/, (m) => String(Number(m) * 2)); break; } }
+  else if (persona === "fabricator") { drop(Math.floor(level / 2)); words.push("and", "the", "police", "came."); }
+  else { drop(Math.floor(level / 2)); words[0] = "Alex"; }
+  return words.join(" ");
+}
+
 export class Room {
   constructor(state, env) {
     this.state = state;
@@ -215,6 +262,32 @@ export class Room {
       return this.view(r, body.id);
     }
 
+    if (act === "ladder") {
+      if (r.phase === "ladder" && !(r.ladder && r.ladder.over)) return { error: "The ladder is already running." };
+      if (r.players.length < 1) return { error: "Nobody here." };
+      r.phase = "ladder"; r.chains = []; r.hop = 0; r.narr = {}; r.recall = {}; r.game++;
+      r.ladder = { level: 1, round: 0, totals: {}, bests: {}, reached: {}, history: [], last: null, over: false };
+      this.newRound(r);
+      return this.view(r, body.id);
+    }
+
+    if (act === "answer") {
+      if (r.phase !== "ladder" || !r.ladder || r.ladder.over) return { error: "No round open." };
+      if (r.players[me].bot) return { error: "Gossips answer on their own." };
+      if (r.ladder.answers[me]) return { error: "You already locked in." };
+      const text = this.clean(body.text);
+      r.ladder.answers[me] = { text, score: accuracy(r.ladder.sentence, text), at: Date.now() };
+      this.maybeFinish(r, false);
+      return this.view(r, body.id);
+    }
+
+    if (act === "close") {
+      if (r.phase !== "ladder" || !r.ladder || r.ladder.over) return { error: "No round open." };
+      if (Date.now() - r.ladder.startedAt < 45000) return { error: "Give them the full 45 seconds." };
+      this.maybeFinish(r, true);
+      return this.view(r, body.id);
+    }
+
     if (act === "narrate") {
       if (r.phase !== "reveal") return { error: "Nothing to narrate yet." };
       const c = Number(body.chain);
@@ -240,7 +313,7 @@ export class Room {
     }
 
     if (act === "again") {
-      if (r.phase !== "reveal") return { error: "Finish this one first." };
+      if (r.phase !== "reveal" && !(r.phase === "ladder" && r.ladder && r.ladder.over)) return { error: "Finish this one first." };
       r.phase = "lobby"; r.chains = []; r.hop = 0; r.narr = {}; r.recall = {}; r.game++;
       return this.view(r, body.id);
     }
@@ -324,6 +397,27 @@ export class Room {
     r.chains[c].versions.push({ by: h, text: this.clean(text), at: Date.now(), bot: true, model: same || !text ? "fallback" : "workers-ai" });
   }
 
+  newRound(r) {
+    const L = r.ladder; L.round++;
+    const sentence = sentenceFor(L.level, r.game * 7919 + L.round * 31 + r.players.length);
+    const words = sentence.split(" ").length;
+    L.sentence = sentence; L.secs = Math.max(4, Math.min(10, Math.round(words / 4.5)) - Math.floor(L.level / 4)); L.startedAt = Date.now(); L.answers = {};
+    r.players.forEach((p, i) => { if (p.bot) { const said = botRecall(sentence, p.persona, L.level, L.round * 17 + i); L.answers[i] = { text: said, score: accuracy(sentence, said), at: Date.now(), bot: true }; } });
+  }
+
+  maybeFinish(r, force) {
+    const L = r.ladder;
+    const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+    if (!force && !humans.every((i) => L.answers[i])) return;
+    const results = r.players.map((p, i) => { const a = L.answers[i] || { text: "", score: 0, missed: true }; L.totals[i] = (L.totals[i] || 0) + a.score; L.bests[i] = Math.max(L.bests[i] || 0, a.score); if (a.score >= 40) L.reached[i] = L.level; return { name: p.name, bot: p.bot, said: a.text, score: a.score, missed: !!a.missed }; });
+    L.last = { level: L.level, sentence: L.sentence, secs: L.secs, results };
+    L.history.push(L.last);
+    const bestHuman = Math.max(0, ...humans.map((i) => (L.answers[i] || { score: 0 }).score));
+    if (L.level >= 12 || bestHuman < 40) { L.over = true; L.endedAt = Date.now(); return; }
+    L.level++;
+    this.newRound(r);
+  }
+
   /* The per-player view. Everything a client is allowed to know, and nothing
      else: during play, only the one version that reached you. */
   view(r, me) {
@@ -348,6 +442,20 @@ export class Room {
         const last = ch.versions[r.hop - 1];
         v.task = { chain: c, passed, from: r.players[last.by].name, text: passed ? null : last.text };
       }
+    }
+    if (r.phase === "ladder" && r.ladder) {
+      const L = r.ladder;
+      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+      const answered = mi >= 0 && !!L.answers[mi];
+      v.ladder = {
+        level: L.level, round: L.round, secs: L.secs, over: L.over,
+        sentence: L.over || answered || mi < 0 ? null : L.sentence,
+        answered, sinceMs: Date.now() - L.startedAt,
+        pending: L.over ? [] : humans.filter((i) => !L.answers[i]).map((i) => r.players[i].name),
+        last: L.last,
+        board: r.players.map((p, i) => ({ name: p.name, bot: p.bot, total: L.totals[i] || 0, best: L.bests[i] || 0, reached: L.reached[i] || 0 })).sort((a, b) => b.total - a.total),
+      };
+      players.forEach((p, i) => { p.done = r.players[i].bot ? null : !!L.answers[i]; });
     }
     if (r.phase === "recall") {
       const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
