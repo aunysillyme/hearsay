@@ -215,7 +215,7 @@ export class Room {
       const id = crypto.randomUUID();
       r.players.push({ id, name, bot: false, joinedAt: Date.now() });
       for (const b of BOTS.slice(0, 4)) r.players.push({ id: crypto.randomUUID(), name: b.name, bot: true, persona: b.persona, bio: b.bio, joinedAt: Date.now() });
-      this.begin(r);
+      if (body.ladder) r.phase = "lobby"; else this.begin(r);
       return { id, ...this.view(r, id) };
     }
 
@@ -265,8 +265,16 @@ export class Room {
     if (act === "ladder") {
       if (r.phase === "ladder" && !(r.ladder && r.ladder.over)) return { error: "The ladder is already running." };
       if (r.players.length < 1) return { error: "Nobody here." };
+      const mode = ["solo", "duel", "group"].includes(body.mode) ? body.mode : "group";
+      let participants;
+      if (mode === "solo") participants = [me];
+      else if (mode === "duel") {
+        const opp = r.players.findIndex((p) => p.name === body.opponent && p.name !== r.players[me].name);
+        if (opp < 0) return { error: "Pick who you are up against." };
+        participants = [me, opp];
+      } else participants = r.players.map((p, i) => i);
       r.phase = "ladder"; r.chains = []; r.hop = 0; r.narr = {}; r.recall = {}; r.game++;
-      r.ladder = { level: 1, round: 0, totals: {}, bests: {}, reached: {}, history: [], last: null, over: false };
+      r.ladder = { mode, participants, level: 1, round: 0, totals: {}, bests: {}, reached: {}, wins: {}, history: [], last: null, over: false, startedBy: me };
       this.newRound(r);
       return this.view(r, body.id);
     }
@@ -274,6 +282,7 @@ export class Room {
     if (act === "answer") {
       if (r.phase !== "ladder" || !r.ladder || r.ladder.over) return { error: "No round open." };
       if (r.players[me].bot) return { error: "Gossips answer on their own." };
+      if (!r.ladder.participants.includes(me)) return { error: "You are watching this one." };
       if (r.ladder.answers[me]) return { error: "You already locked in." };
       const text = this.clean(body.text);
       r.ladder.answers[me] = { text, score: accuracy(r.ladder.sentence, text), at: Date.now() };
@@ -402,18 +411,23 @@ export class Room {
     const sentence = sentenceFor(L.level, r.game * 7919 + L.round * 31 + r.players.length);
     const words = sentence.split(" ").length;
     L.sentence = sentence; L.secs = Math.max(4, Math.min(10, Math.round(words / 4.5)) - Math.floor(L.level / 4)); L.startedAt = Date.now(); L.answers = {};
-    r.players.forEach((p, i) => { if (p.bot) { const said = botRecall(sentence, p.persona, L.level, L.round * 17 + i); L.answers[i] = { text: said, score: accuracy(sentence, said), at: Date.now(), bot: true }; } });
+    L.participants.forEach((i) => { const p = r.players[i]; if (p.bot) { const said = botRecall(sentence, p.persona, L.level, L.round * 17 + i); L.answers[i] = { text: said, score: accuracy(sentence, said), at: Date.now(), bot: true }; } });
   }
 
   maybeFinish(r, force) {
     const L = r.ladder;
-    const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+    const humans = L.participants.filter((i) => !r.players[i].bot);
     if (!force && !humans.every((i) => L.answers[i])) return;
-    const results = r.players.map((p, i) => { const a = L.answers[i] || { text: "", score: 0, missed: true }; L.totals[i] = (L.totals[i] || 0) + a.score; L.bests[i] = Math.max(L.bests[i] || 0, a.score); if (a.score >= 40) L.reached[i] = L.level; return { name: p.name, bot: p.bot, said: a.text, score: a.score, missed: !!a.missed }; });
-    L.last = { level: L.level, sentence: L.sentence, secs: L.secs, results };
+    const results = L.participants.map((i) => { const p = r.players[i]; const a = L.answers[i] || { text: "", score: 0, missed: true }; L.totals[i] = (L.totals[i] || 0) + a.score; L.bests[i] = Math.max(L.bests[i] || 0, a.score); if (a.score >= 40) L.reached[i] = L.level; return { idx: i, name: p.name, bot: p.bot, said: a.text, score: a.score, missed: !!a.missed }; });
+    let roundWinner = null;
+    if (L.mode === "duel") { const top = Math.max(...results.map((x) => x.score)); const tops = results.filter((x) => x.score === top); if (tops.length === 1 && top > 0) { roundWinner = tops[0].name; L.wins[tops[0].idx] = (L.wins[tops[0].idx] || 0) + 1; } }
+    L.last = { level: L.level, sentence: L.sentence, secs: L.secs, results: results.map(({ idx, ...x }) => x), roundWinner };
     L.history.push(L.last);
     const bestHuman = Math.max(0, ...humans.map((i) => (L.answers[i] || { score: 0 }).score));
-    if (L.level >= 12 || bestHuman < 40) { L.over = true; L.endedAt = Date.now(); return; }
+    const bestAny = Math.max(0, ...L.participants.map((i) => (L.answers[i] || { score: 0 }).score));
+    const cap = L.mode === "duel" ? 8 : 12;
+    const dead = L.mode === "duel" ? bestAny < 40 : bestHuman < 40;
+    if (L.level >= cap || dead) { L.over = true; L.endedAt = Date.now(); return; }
     L.level++;
     this.newRound(r);
   }
@@ -445,17 +459,19 @@ export class Room {
     }
     if (r.phase === "ladder" && r.ladder) {
       const L = r.ladder;
-      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
-      const answered = mi >= 0 && !!L.answers[mi];
+      const humans = L.participants.filter((i) => !r.players[i].bot);
+      const playing = mi >= 0 && L.participants.includes(mi);
+      const answered = playing && !!L.answers[mi];
       v.ladder = {
-        level: L.level, round: L.round, secs: L.secs, over: L.over,
-        sentence: L.over || answered || mi < 0 ? null : L.sentence,
+        mode: L.mode, level: L.level, round: L.round, secs: L.secs, over: L.over, playing,
+        participants: L.participants.map((i) => r.players[i].name),
+        sentence: L.over || answered || !playing ? null : L.sentence,
         answered, sinceMs: Date.now() - L.startedAt,
         pending: L.over ? [] : humans.filter((i) => !L.answers[i]).map((i) => r.players[i].name),
         last: L.last,
-        board: r.players.map((p, i) => ({ name: p.name, bot: p.bot, total: L.totals[i] || 0, best: L.bests[i] || 0, reached: L.reached[i] || 0 })).sort((a, b) => b.total - a.total || (a.bot ? 1 : 0) - (b.bot ? 1 : 0)),
+        board: L.participants.map((i) => { const p = r.players[i]; return { name: p.name, bot: p.bot, total: L.totals[i] || 0, best: L.bests[i] || 0, reached: L.reached[i] || 0, wins: L.wins[i] || 0 }; }).sort((a, b) => (L.mode === "duel" ? b.wins - a.wins : 0) || b.total - a.total || (a.bot ? 1 : 0) - (b.bot ? 1 : 0)),
       };
-      players.forEach((p, i) => { p.done = r.players[i].bot ? null : !!L.answers[i]; });
+      players.forEach((p, i) => { p.done = r.players[i].bot || !L.participants.includes(i) ? null : !!L.answers[i]; });
     }
     if (r.phase === "recall") {
       const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);

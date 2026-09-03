@@ -154,7 +154,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
     </div>
     <p class="mute" style="margin-top:8px">Solo takes about two minutes: you start one rumor, four gossips with known habits pass everything around, and you get the full record.</p>
     <div class="row" style="margin-top:14px">
-      <button class="alt" id="b-solo-ladder">Or: the memory ladder, solo vs the gossips</button>
+      <button class="alt" id="b-solo-ladder">Or: the memory ladder (solo · 1v1 · group)</button>
     </div>
     <div class="row" style="margin-top:14px">
       <button class="alt" id="b-start">Start a room for friends</button>
@@ -182,7 +182,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
     <div class="row" style="margin-top:8px">
       <button class="alt" id="b-bot">Seat a gossip</button>
       <button id="b-go">Start the telephone game</button>
-      <button class="alt" id="b-ladder">Or the memory ladder</button>
+      <button class="alt" id="b-ladder">Or the memory ladder: solo · 1v1 · group</button>
       <span class="mute" id="lobbynote"></span>
     </div>
   </div>
@@ -234,7 +234,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 <!-- LADDER -->
 <section class="screen" id="s-ladder">
   <h2 id="ladhead">The memory ladder · level 1</h2>
-  <p class="mute">Everyone in the room gets the <b>same sentence for the same few seconds</b>, then types it back. Accuracy is the score. Each level the sentence gets longer and the look gets shorter. The ladder ends when nobody clears 40%.</p>
+  <p class="mute">Whoever is playing gets the <b>same sentence for the same few seconds</b>, then types it back. Accuracy is the score. Each level the sentence gets longer and the look gets shorter. The ladder ends when nobody clears 40%.</p>
   <div class="card alt"><h3 style="margin-top:0">The board</h3><div style="overflow-x:auto"><table id="ladboard"></table></div></div>
   <div class="card" id="ladlast" hidden><h3 style="margin-top:0" id="ladlasthead">Last round</h3><div class="exhibit" id="ladlastsent" style="font-size:15px"></div><div id="ladresults"></div></div>
   <div class="card" id="ladround">
@@ -266,6 +266,13 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 
 </main>
 <footer>hearsay · built live for Camp AI, Season 2 Episode 8 · <a href="https://github.com/aunysillyme/hearsay">source</a> · one HTML file, one Cloudflare Worker, one Durable Object, $0 to run.</footer>
+<div id="modepick" class="card" hidden style="position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:20;max-width:520px;width:calc(100% - 32px);box-shadow:6px 6px 0 var(--ink)">
+  <h2 style="margin-top:0">The memory ladder. Pick a mode.</h2>
+  <div class="row"><button id="m-solo">Solo</button><span class="mute">just you, climb as high as you can</span></div>
+  <div class="row" style="margin-top:10px"><button id="m-duel">1v1</button><span class="mute">against</span><select id="m-opp" style="font:inherit;padding:8px;border:2px solid var(--ink);border-radius:8px 14px 6px 12px"></select><span class="mute">round wins decide, 8 levels</span></div>
+  <div class="row" style="margin-top:10px"><button id="m-group">Group</button><span class="mute">everyone in the room, one board</span></div>
+  <div class="row" style="margin-top:14px"><button class="quiet" id="m-cancel">Never mind</button></div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -384,7 +391,7 @@ function playerList(el, v) {
 }
 function renderLobby(v) {
   $("lobbycode").textContent = v.code; playerList($("lobbyplayers"), v);
-  $("b-go").disabled = !v.host || v.n < 3; $("b-bot").disabled = v.n >= 6; $("b-ladder").disabled = !v.host;
+  $("b-go").disabled = !v.host || v.n < 3; $("b-bot").disabled = v.n >= 6; 
   $("lobbynote").textContent = v.n < 3 ? `${3 - v.n} more to start.` : v.host ? `${v.n} seated. ${v.n - 1} hops per rumor.` : "Waiting for the host to start.";
   stopGlance(); show("s-lobby");
 }
@@ -417,12 +424,13 @@ function stopGlance() { clearInterval(S.glance); S.glance = null; }
 function renderLadder(v) {
   const L = v.ladder; if (!L) return;
   const key = v.game + ":" + L.round;
-  $("ladhead").textContent = L.over ? "The memory ladder · over" : `The memory ladder · level ${L.level}`;
+  const modeName = { solo: "solo", duel: "1v1", group: "group" }[L.mode] || "group";
+  $("ladhead").textContent = (L.over ? "The memory ladder · over" : `The memory ladder · level ${L.level}`) + ` · ${modeName}` + (L.mode === "duel" ? ` · ${L.participants.join(" vs ")}` : "");
   $("ladstamp").textContent = `level ${L.level} · ${L.secs}s look`; $("ladsecs").textContent = L.secs;
   const best = L.board.length ? L.board[0].total : 0;
-  $("ladboard").innerHTML = `<tr><th>Who</th><th>Total</th><th>Best round</th><th>Reached</th></tr>` + L.board.map((b, i) => `<tr><td>${charByName(v, b.name)}<b>${esc(b.name)}</b>${b.bot ? ` <span class="mute">gossip</span>` : ""}${i === 0 && b.total > 0 ? " ★" : ""}</td><td class="num">${b.total}</td><td class="num">${b.best}%</td><td class="num">${b.reached ? "level " + b.reached : "-"}</td></tr>`).join("");
+  $("ladboard").innerHTML = `<tr><th>Who</th>${L.mode === "duel" ? "<th>Round wins</th>" : ""}<th>Total</th><th>Best round</th><th>Reached</th></tr>` + L.board.map((b, i) => `<tr><td>${charByName(v, b.name)}<b>${esc(b.name)}</b>${b.bot ? ` <span class="mute">gossip</span>` : ""}${i === 0 && b.total > 0 && L.mode !== "solo" ? " ★" : ""}</td>${L.mode === "duel" ? `<td class="num">${b.wins}</td>` : ""}<td class="num">${b.total}</td><td class="num">${b.best}%</td><td class="num">${b.reached ? "level " + b.reached : "-"}</td></tr>`).join("");
   if (L.last) {
-    $("ladlast").hidden = false; $("ladlasthead").textContent = `Level ${L.last.level}: what everyone typed back`;
+    $("ladlast").hidden = false; $("ladlasthead").textContent = `Level ${L.last.level}: what everyone typed back` + (L.last.roundWinner ? ` · round to ${L.last.roundWinner}` : L.mode === "duel" ? " · round tied" : "");
     $("ladlastsent").textContent = L.last.sentence;
     const T = tok(L.last.sentence);
     $("ladresults").innerHTML = L.last.results.slice().sort((a, b) => b.score - a.score).map((x) => { const ops = lcsOps(T, tok(x.said || "")); const marked = ops.map(([op, t]) => op === "=" ? esc(t.d) : op === "-" ? `<del>${esc(t.d)}</del>` : `<ins class="inv">${esc(t.d)}</ins>`).join(" "); return `<div class="hop"><div class="by">${charByName(v, x.name)}${esc(x.name)}<small>${x.score}%${x.missed ? " · no answer" : ""}</small></div><div><div class="text">${x.said ? marked : "<i>nothing</i>"}</div><div class="bar"><i style="width:${x.score}%;background:${x.score >= 70 ? "var(--green)" : x.score >= 40 ? "var(--cobalt)" : "var(--magenta)"}"></i></div></div></div>`; }).join("");
@@ -430,10 +438,13 @@ function renderLadder(v) {
   if (L.over) {
     $("ladround").hidden = true; $("ladover").hidden = false;
     const me = L.board.find((b) => v.players[v.me] && b.name === v.players[v.me].name);
-    $("ladoversum").textContent = `${L.board[0].name} tops the board with ${L.board[0].total} points.` + (me ? ` You reached ${me.reached ? "level " + me.reached : "nowhere yet"} with a best round of ${me.best}%.` : "");
+    const top = L.board[0];
+    $("ladoversum").textContent = (L.mode === "solo" ? `You climbed to ${top.reached ? "level " + top.reached : "the first rung"} for ${top.total} points, best round ${top.best}%.` : L.mode === "duel" ? (L.board[0].wins === (L.board[1] ? L.board[1].wins : -1) ? `Dead even on round wins; ${top.name} takes it on points, ${top.total} to ${L.board[1].total}.` : `${top.name} wins it, ${top.wins} rounds to ${L.board[1] ? L.board[1].wins : 0}.`) : `${top.name} tops the board with ${top.total} points.` + (me ? ` You reached ${me.reached ? "level " + me.reached : "nowhere yet"} with a best round of ${me.best}%.` : ""));
     stopGlance(); show("s-ladder"); return;
   }
-  $("ladround").hidden = false; $("ladover").hidden = true;
+  $("ladover").hidden = true;
+  if (!L.playing) { $("ladround").hidden = true; $("ladhead").textContent += " · you are watching"; stopGlance(); show("s-ladder"); return; }
+  $("ladround").hidden = false;
   if (S.ladKey !== key) { S.ladKey = key; S.ladStage = "pre"; $("ladinput").value = ""; stopGlance(); }
   if (L.answered) S.ladStage = "wait";
   ["ladpre", "ladglance", "ladanswer", "ladwait"].forEach((id) => { $(id).hidden = true; });
@@ -577,11 +588,13 @@ $("b-ladshow").onclick = ladShow;
 $("b-ladlock").onclick = async () => { const text = $("ladinput").value.trim(); try { $("b-ladlock").disabled = true; const r = await post("answer", { text }); S.ladStage = "wait"; render(r); } catch (e) { toast(e.message); } finally { $("b-ladlock").disabled = false; } };
 $("ladinput").addEventListener("paste", (e) => { e.preventDefault(); toast("No pasting. From memory."); });
 $("b-ladclose").onclick = async () => { try { render(await post("close", {})); } catch (e) { toast(e.message); } };
-const startLadder = async () => { try { S.ladKey = null; render(await post("ladder", {})); } catch (e) { toast(e.message); } };
-$("b-ladder").onclick = startLadder; $("b-ladder2").onclick = startLadder; $("b-ladagain").onclick = startLadder;
+const startLadder = async (mode, opponent) => { try { S.ladKey = null; $("modepick").hidden = true; render(await post("ladder", { mode, opponent })); } catch (e) { toast(e.message); } };
+const openModes = () => { const v = S.view; if (!v) return; const me = v.players[v.me]; $("m-opp").innerHTML = v.players.filter((p) => !p.me).map((p) => `<option>${esc(p.name)}</option>`).join(""); $("m-duel").disabled = v.players.length < 2; $("m-group").disabled = v.players.length < 2; $("modepick").hidden = false; };
+$("m-solo").onclick = () => startLadder("solo"); $("m-duel").onclick = () => startLadder("duel", $("m-opp").value); $("m-group").onclick = () => startLadder("group"); $("m-cancel").onclick = () => { $("modepick").hidden = true; };
+$("b-ladder").onclick = openModes; $("b-ladder2").onclick = openModes; $("b-ladagain").onclick = openModes;
 $("b-ladtelephone").onclick = async () => { try { render(await post("again", {})); } catch (e) { toast(e.message); } };
 $("b-ladhome").onclick = leave;
-$("b-solo-ladder").onclick = async () => { const name = myName(); if (!name) return toast("Put your name in first."); const code = newCode(); S.code = code; try { const r = await post("solo", { name }); enter(code, r.id); S.ladKey = null; render(await post("ladder", {})); } catch (e) { toast(e.message); } };
+$("b-solo-ladder").onclick = async () => { const name = myName(); if (!name) return toast("Put your name in first."); const code = newCode(); S.code = code; try { const r = await post("solo", { name, ladder: true }); enter(code, r.id); render(r); openModes(); } catch (e) { toast(e.message); } };
 $("b-recall").onclick = async () => { const text = $("recallinput").value.trim(); if (!text) return toast("Whatever you remember. Fragments count."); try { $("b-recall").disabled = true; const r = await post("recall", { text }); $("recallinput").value = ""; render(r); } catch (e) { toast(e.message); } finally { $("b-recall").disabled = false; } };
 $("recallinput").addEventListener("paste", (e) => { e.preventDefault(); toast("No pasting. From memory."); });
 $("b-again").onclick = async () => { try { render(await post("again", {})); } catch (e) { toast(e.message); } };
