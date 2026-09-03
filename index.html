@@ -395,6 +395,7 @@ function renderLobby(v) {
   $("b-go").disabled = !v.host || v.n < 3; $("b-bot").disabled = v.n >= 6; 
   $("lobbynote").textContent = v.n < 3 ? `${3 - v.n} more to start.` : v.host ? `${v.n} seated. ${v.n - 1} hops per rumor.` : "Waiting for the host to start.";
   stopGlance(); show("s-lobby");
+  if (S.wantModes) { S.wantModes = false; openModes(); }
 }
 function renderWait(v, head) {
   $("waithead").textContent = head || (v.phase === "play" ? `Hop ${v.hop} of ${v.hops}. The rumor is with ${v.holder}.` : "Waiting on the others.");
@@ -595,7 +596,7 @@ $("m-solo").onclick = () => startLadder("solo"); $("m-duel").onclick = () => sta
 $("b-ladder").onclick = openModes; $("b-ladder2").onclick = openModes; $("b-ladagain").onclick = openModes;
 $("b-ladtelephone").onclick = async () => { try { render(await post("again", {})); } catch (e) { toast(e.message); } };
 $("b-ladhome").onclick = leave;
-$("b-solo-ladder").onclick = async () => { const name = myName(); if (!name) return toast("Put your name in first."); const code = newCode(); S.code = code; try { const r = await post("solo", { name, ladder: true }); enter(code, r.id); render(r); openModes(); } catch (e) { toast(e.message); } };
+$("b-solo-ladder").onclick = async () => { const name = myName(); if (!name) return toast("Put your name in first."); const code = newCode(); S.code = code; try { const r = await post("solo", { name, ladder: true }); S.wantModes = true; enter(code, r.id); render(r); } catch (e) { console.error(e); toast(e.message); } };
 $("b-recall").onclick = async () => { const text = $("recallinput").value.trim(); if (!text) return toast("Whatever you remember. Fragments count."); try { $("b-recall").disabled = true; const r = await post("recall", { text }); $("recallinput").value = ""; render(r); } catch (e) { toast(e.message); } finally { $("b-recall").disabled = false; } };
 $("recallinput").addEventListener("paste", (e) => { e.preventDefault(); toast("No pasting. From memory."); });
 $("b-again").onclick = async () => { try { render(await post("again", {})); } catch (e) { toast(e.message); } };
