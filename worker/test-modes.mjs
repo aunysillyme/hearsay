@@ -24,7 +24,8 @@ ok(v2.ladder.over, "duel ends when both miss");
 [s, v] = await post("ladder", { id: me, mode: "duel", opponent: "Sal" });
 ok(s === 200 && v.ladder.participants.join() === "Auny,Sal", "duel vs a gossip");
 [s, v] = await post("answer", { id: me, text: v.ladder.sentence }); ok(v.ladder.level === 2 && v.ladder.last.results.length === 2, "gossip answered instantly, round scored");
-[s, v] = await post("answer", { id: me, text: "" }); ok(v.ladder.over === false || v.ladder.over === true, "continues or ends by rule (bestAny)");
+let g2 = 0; while (!v.ladder.over && g2++ < 10) [s, v] = await post("answer", { id: me, text: "" });
+ok(v.ladder.over, "duel vs gossip ends once the human keeps missing (gossip alone cannot carry it past the cap)");
 // group
 [s, v] = await post("ladder", { id: me, mode: "group" });
 ok(v.ladder.participants.length === 6, "group: all six");
