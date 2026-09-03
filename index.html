@@ -150,9 +150,9 @@ footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13
     </div>
   </div>
   <div class="steps">
-    <div class="card"><b>1. One look</b>The version that reached you shows for twelve seconds, then it is gone. Pasting is off. What you pass on is what you remember.</div>
+    <div class="card"><b>1. One look</b>The version that reached you shows for twelve seconds, then it is gone, and the line gets faster every hop. Pasting is off. What you pass on is what you remember.</div>
     <div class="card"><b>2. Every hop kept</b>The room keeps every version and shows you only yours. Nobody sees the chain until it is finished.</div>
-    <div class="card"><b>3. The record</b>Original beside final, then hop by hop: what got bigger, what fell off, what appeared from nowhere, and who did it.</div>
+    <div class="card"><b>3. The record</b>First, a memory test: retype the first message that ever reached you. Then original beside final, hop by hop: what got bigger, what fell off, what appeared from nowhere, and who did it.</div>
   </div>
   <p class="mute">3 to 6 in a room. Everyone starts a rumor, and every rumor visits everyone else once, so nobody waits around. Short on people? Seat a gossip.</p>
 </section>
@@ -205,11 +205,22 @@ footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13
   <ul class="players" id="waitplayers"></ul>
 </section>
 
+<!-- RECALL -->
+<section class="screen" id="s-recall">
+  <h2>One more thing. The memory test.</h2>
+  <p class="lede">Before the record opens: <b>retype the first message that ever reached you</b>, from memory. You saw it once, at hop 1, for a few seconds. Everything since has been trying to overwrite it.</p>
+  <div class="card">
+    <textarea id="recallinput" maxlength="500" placeholder="Whatever you remember. Fragments count."></textarea>
+    <div class="row" style="margin-top:10px"><button id="b-recall">Lock it in and open the record</button> <span class="mute">Scored against the actual text. Everyone gets a memory score.</span></div>
+  </div>
+</section>
+
 <!-- REVEAL -->
 <section class="screen" id="s-reveal">
   <h2 id="revealhead">The record.</h2>
   <p class="mute" id="revealsub"></p>
   <div class="legend"><span><del>struck</del> = dropped</span><span><ins class="exag">amber</ins> = exaggerated</span><span><ins class="inv">violet</ins> = invented, was never in the original</span><span><ins class="add">dotted</ins> = reworded</span></div>
+  <div id="memory"></div>
   <div id="chains"></div>
   <h3>Who did what</h3>
   <div class="card" style="overflow-x:auto"><table id="ledger"></table></div>
@@ -268,6 +279,7 @@ function render(v) {
   if (v.phase === "lobby") return renderLobby(v);
   if (v.phase === "seed") { if (v.seeded) return renderWait(v, "Your rumor is out."); $("seedcrew").textContent = "On the line with you: " + v.players.filter((p) => !p.me).map((p) => p.name + (p.bot ? " (" + p.bio + ")" : "")).join(", ") + "."; return show("s-seed"); }
   if (v.phase === "play") return (!v.task || v.task.passed) ? renderWait(v) : renderPass(v);
+  if (v.phase === "recall") return v.recall && v.recall.done ? renderWait(v, "Memory locked in.") : (stopGlance(), show("s-recall"));
   if (v.phase === "reveal") return renderReveal(v);
 }
 function playerList(el, v) {
@@ -288,17 +300,18 @@ function renderWait(v, head) {
 function renderPass(v) {
   const key = v.game + ":" + v.task.chain + ":" + v.hop;
   $("passhead").textContent = `Hop ${v.hop} of ${v.hops}. Something reached you.`;
-  $("passsub").textContent = "Read it once. In twelve seconds it is gone, and what you pass on is what you remember.";
+  const secs = Math.max(5, 12 - (v.hop - 1) * 2);
+  $("passsub").textContent = `Read it once. You get ${secs} seconds this hop${v.hop > 1 ? ", the line is getting faster" : ""}. Then it is gone, and what you pass on is what you remember.`;
   $("passfrom").textContent = v.task.from;
   if (S.glanceKey !== key) {
-    S.glanceKey = key; $("passinput").value = ""; startGlance(v.task.text);
+    S.glanceKey = key; $("passinput").value = ""; startGlance(v.task.text, Math.max(5, 12 - (v.hop - 1) * 2));
   }
   show("s-pass");
 }
-function startGlance(text) {
+function startGlance(text, secs) {
   stopGlance(); const el = $("passtext"); el.textContent = text; el.classList.remove("hidden");
-  let left = 12; $("passclock").textContent = left + "s"; $("passbar").style.width = "100%";
-  S.glance = setInterval(() => { left -= 0.25; $("passbar").style.width = Math.max(0, left / 12 * 100) + "%"; $("passclock").textContent = Math.ceil(left) + "s"; if (left <= 0) hideGlance(); }, 250);
+  let left = secs || 12; const total = left; $("passclock").textContent = left + "s"; $("passbar").style.width = "100%";
+  S.glance = setInterval(() => { left -= 0.25; $("passbar").style.width = Math.max(0, left / total * 100) + "%"; $("passclock").textContent = Math.ceil(left) + "s"; if (left <= 0) hideGlance(); }, 250);
 }
 function hideGlance() { clearInterval(S.glance); S.glance = null; $("passtext").classList.add("hidden"); $("passclock").textContent = "gone"; $("passbar").style.width = "0%"; $("passinput").focus(); }
 function stopGlance() { clearInterval(S.glance); S.glance = null; }
@@ -362,6 +375,15 @@ function renderReveal(v) {
   $("revealsub").textContent = `${v.chains.length} rumors, ${v.hops} hops each${mins ? `, ${mins} minute${mins > 1 ? "s" : ""} on the line` : ""}. Every version below is the one that person actually passed on.`;
   const stats = {}; v.players.forEach((p) => { stats[p.name] = { name: p.name, bot: p.bot, bio: p.bio, hops: 0, kept: 0, dropped: 0, invented: 0, exag: 0 }; });
   const analyses = v.chains.map(analyseChain);
+  const memScore = {};
+  $("memory").innerHTML = (v.memory && v.memory.length && v.memory.some((m) => m.said)) ? `<div class="card alt"><div class="row" style="justify-content:space-between"><span class="stamp amber">the memory test</span><span class="mute">the first message that reached each player, against what they could recall of it at the end</span></div>` + v.memory.map((m) => {
+    if (!m.target) return "";
+    const T = tok(m.target), R = tok(m.said || "");
+    const score = m.said ? fidelity(T, R) : 0; memScore[m.name] = score;
+    const ops = lcsOps(T, R);
+    const marked = ops.map(([op, t]) => op === "=" ? esc(t.d) : op === "-" ? `<del>${esc(t.d)}</del>` : `<ins class="inv">${esc(t.d)}</ins>`).join(" ");
+    return `<div class="hop"><div class="by">${esc(m.name)}<small>remembered ${score}%${m.gapMs ? " after " + Math.max(1, Math.round(m.gapMs / 60000)) + " min" : ""}</small></div><div><div class="text" style="color:var(--mute);font-size:13px">was handed by ${esc(m.from || "?")}: ${esc(m.target)}</div><div class="text" style="margin-top:6px">${m.said ? marked : "<i>did not answer</i>"}</div><div class="bar"><i style="width:${score}%;background:var(--magenta)"></i></div></div></div>`;
+  }).join("") + `</div>` : "";
   $("chains").innerHTML = v.chains.map((ch, c) => {
     const an = analyses[c]; const orig = ch.versions[0], fin = ch.versions[ch.versions.length - 1];
     an.hops.forEach((h, i) => { const s = stats[h.by]; if (!s) return; s.hops++; s.kept += Math.max(0, 100 - h.loss); s.dropped += h.dropped.length; s.invented += h.invented.length; s.exag += h.exag.length; });
@@ -384,7 +406,8 @@ function renderReveal(v) {
     if (top > 0) verdict = top === s.invented ? "the fabricator" : top === s.exag ? "the embellisher" : "the shredder";
     if (kept >= 90 && top <= 1) verdict = "the faithful";
     return { ...s, kept, verdict }; }).sort((a, b) => a.kept - b.kept);
-  $("ledger").innerHTML = `<tr><th>Who</th><th>Hops</th><th>Kept</th><th>Exaggerated</th><th>Dropped</th><th>Invented</th><th>Verdict</th></tr>` + rows.map((r) => `<tr><td><b>${esc(r.name)}</b>${r.bot ? ` <span class="mute">gossip</span>` : ""}</td><td class="num">${r.hops}</td><td class="num">${r.kept}%</td><td class="num">${r.exag}</td><td class="num">${r.dropped}</td><td class="num">${r.invented}</td><td class="verdict">${r.verdict}</td></tr>`).join("");
+  const bestMem = Math.max(0, ...Object.values(memScore));
+  $("ledger").innerHTML = `<tr><th>Who</th><th>Hops</th><th>Kept</th><th>Exaggerated</th><th>Dropped</th><th>Invented</th><th>Memory</th><th>Verdict</th></tr>` + rows.map((r) => { const m = memScore[r.name]; const mv = m !== undefined ? m + "%" + (m === bestMem && bestMem > 0 ? " ★" : "") : "<span class=\"mute\">-</span>"; const verdict = (m !== undefined && m === bestMem && bestMem >= 60) ? "sharpest memory" : r.verdict; return `<tr><td><b>${esc(r.name)}</b>${r.bot ? ` <span class="mute">gossip</span>` : ""}</td><td class="num">${r.hops}</td><td class="num">${r.kept}%</td><td class="num">${r.exag}</td><td class="num">${r.dropped}</td><td class="num">${r.invented}</td><td class="num">${mv}</td><td class="verdict">${verdict}</td></tr>`; }).join("");
   S.record = { v, analyses };
   show("s-reveal");
   v.chains.forEach((ch, c) => { if (!ch.narration) narrate(c, ch, analyses[c]); });
@@ -412,6 +435,8 @@ $("b-seed").onclick = async () => { const text = $("seedtext").value.trim(); try
 $("b-seen").onclick = hideGlance;
 $("passinput").addEventListener("paste", (e) => { e.preventDefault(); toast("No pasting. From memory."); });
 $("b-pass").onclick = async () => { const text = $("passinput").value.trim(); if (!text) return toast("Say something, even a mangled version."); try { $("b-pass").disabled = true; const r = await post("pass", { text }); render(r); } catch (e) { toast(e.message); } finally { $("b-pass").disabled = false; } };
+$("b-recall").onclick = async () => { const text = $("recallinput").value.trim(); if (!text) return toast("Whatever you remember. Fragments count."); try { $("b-recall").disabled = true; const r = await post("recall", { text }); $("recallinput").value = ""; render(r); } catch (e) { toast(e.message); } finally { $("b-recall").disabled = false; } };
+$("recallinput").addEventListener("paste", (e) => { e.preventDefault(); toast("No pasting. From memory."); });
 $("b-again").onclick = async () => { try { render(await post("again", {})); } catch (e) { toast(e.message); } };
 $("b-copy").onclick = () => copy(recordMarkdown());
 $("b-home").onclick = leave;
@@ -467,6 +492,7 @@ const P = [
   ["s-pass", "headphones", "blue", "right:-6px;top:0", -14, null, null, true],
   ["#s-pass .card", "heart", "purple", "left:-30px;bottom:60px", 12, null, null, true],
   ["s-wait", "loop", "purple", "right:6%;top:0", 0, "waiting is part of it", "below", true],
+  ["#s-recall .card", "sparkle", "pink", "right:16px;top:-30px", 18, "think back...", "below", true],
   ["s-lobby", "crown", "pink", "right:6%;top:-16px", 12, null, null, true],
   ["#s-lobby .card", "plant", "green", "right:12px;bottom:8px", -4, null, null, true],
   ["s-reveal", "arrow", "pink", "left:220px;top:-6px", 200, "who bent it?", "below", true],

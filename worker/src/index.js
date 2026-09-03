@@ -203,6 +203,18 @@ export class Room {
       return this.view(r, body.id);
     }
 
+    if (act === "recall") {
+      if (r.phase !== "recall") return { error: "Not the time for the memory test." };
+      if (r.players[me].bot) return { error: "Gossips do not sit the test." };
+      if (r.recall[me]) return { error: "You already answered." };
+      const text = this.clean(body.text);
+      if (text.length < 3) return { error: "Whatever you remember. Even a fragment counts." };
+      r.recall[me] = { text, at: Date.now() };
+      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+      if (humans.every((i) => r.recall[i])) { r.phase = "reveal"; r.revealedAt = Date.now(); }
+      return this.view(r, body.id);
+    }
+
     if (act === "narrate") {
       if (r.phase !== "reveal") return { error: "Nothing to narrate yet." };
       const c = Number(body.chain);
@@ -229,7 +241,7 @@ export class Room {
 
     if (act === "again") {
       if (r.phase !== "reveal") return { error: "Finish this one first." };
-      r.phase = "lobby"; r.chains = []; r.hop = 0; r.narr = {}; r.game++;
+      r.phase = "lobby"; r.chains = []; r.hop = 0; r.narr = {}; r.recall = {}; r.game++;
       return this.view(r, body.id);
     }
 
@@ -242,6 +254,7 @@ export class Room {
     r.phase = "seed";
     r.hop = 0;
     r.narr = {};
+    r.recall = {};
     r.chains = r.players.map((p, i) => ({ seedBy: i, versions: [] }));
     const used = new Set();
     r.players.forEach((p, i) => {
@@ -264,7 +277,12 @@ export class Room {
       if (allIn) {
         if (r.phase === "seed") r.phase = "play";
         r.hop++;
-        if (r.hop >= N) { r.phase = "reveal"; r.revealedAt = Date.now(); return; }
+        if (r.hop >= N) {
+          r.recall = r.recall || {};
+          if (r.players.some((p) => !p.bot)) { r.phase = "recall"; r.recallAt = Date.now(); }
+          else { r.phase = "reveal"; r.revealedAt = Date.now(); }
+          return;
+        }
       }
       const jobs = [];
       r.chains.forEach((ch, c) => {
@@ -331,7 +349,19 @@ export class Room {
         v.task = { chain: c, passed, from: r.players[last.by].name, text: passed ? null : last.text };
       }
     }
+    if (r.phase === "recall") {
+      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+      v.recall = { done: mi >= 0 && !!(r.recall || {})[mi], pending: humans.filter((i) => !(r.recall || {})[i]).map((i) => r.players[i].name) };
+      players.forEach((p, i) => { p.done = r.players[i].bot ? null : !!(r.recall || {})[i]; });
+    }
     if (r.phase === "reveal") {
+      v.memory = r.players.map((p, i) => {
+        if (p.bot) return null;
+        const c = r.chains.findIndex((ch, ci) => this.holder(r, ci, 1) === i);
+        const target = c >= 0 && r.chains[c].versions[0] ? r.chains[c].versions[0].text : null;
+        const rec = (r.recall || {})[i];
+        return { name: p.name, target, from: c >= 0 ? r.players[r.chains[c].seedBy].name : null, said: rec ? rec.text : null, gapMs: rec && r.startedAt ? rec.at - r.startedAt : null };
+      }).filter(Boolean);
       v.chains = r.chains.map((ch, c) => ({
         chain: c,
         seedBy: r.players[ch.seedBy].name,

@@ -30,7 +30,13 @@ while (v.phase === "play" && hops < 10) {
   ok(s === 200, "pass at hop " + hops + " accepted -> phase " + v.phase + " hop " + v.hop);
   [s, v] = [s, await get(me)];
 }
-ok(v.phase === "reveal", "reached reveal after " + hops + " human passes");
+ok(v.phase === "recall" && v.recall && v.recall.done === false, "memory test opens after " + hops + " human passes");
+ok(!v.chains, "blindness holds during the memory test");
+[s, v] = await post("pass", { id: me, text: "late" });
+ok(s === 400, "pass during recall refused");
+[s, v] = await post("recall", { id: me, text: "Priya said the landlord is raising rent by $75 in March." });
+ok(s === 200 && v.phase === "reveal", "recall accepted, reveal opens");
+ok(v.memory && v.memory.length === 1 && v.memory[0].target && v.memory[0].said, "memory test carries target + answer for the human");
 ok(v.chains && v.chains.length === 5, "5 chains revealed");
 ok(v.chains.every(c => c.versions.length === 5), "every chain has 5 versions (seed + 4 hops)");
 const bots = v.chains.flatMap(c => c.versions.filter(x => x.bot));
