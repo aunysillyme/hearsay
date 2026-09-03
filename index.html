@@ -20,7 +20,7 @@
    handwriting is the commentary. */
 :root{
   --paper:#FFFFFF; --card:#FFFFFF; --ink:#14121A; --mute:#6B6878; --line:#CFCAD8;
-  --cobalt:#1E40FF; --magenta:#F26A1B; --pink:#FFB27A; --purple:#7A3FE0; --green:#1E9E5A;
+  --cobalt:#1E40FF; --magenta:#7A3FE0; --pink:#C4B5F5; --purple:#7A3FE0; --green:#1E9E5A;
   --red:var(--cobalt); --amber:var(--magenta); --violet:var(--purple);
   --hand:Kalam,"Comic Sans MS","Segoe Print",cursive;
   --serif:Kalam,cursive;
@@ -63,10 +63,10 @@ button:hover{transform:translate(-1px,-1px) rotate(-.6deg)}
 button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 button.alt{background:#fff;color:var(--ink)}
 button.quiet{background:#fff;color:var(--mute);border-color:var(--mute);box-shadow:2px 2px 0 var(--mute);font-size:15px}
-button.big{font-size:22px;padding:13px 24px;background:var(--magenta)}
+button.big{font-size:22px;padding:13px 24px;background:var(--cobalt)}
 button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .stamp{display:inline-block;font-family:var(--hand);font-weight:700;font-size:14px;border:2px solid currentColor;border-radius:var(--wob2);padding:1px 10px;transform:rotate(-1.5deg);color:var(--purple)}
-.stamp.red{color:var(--cobalt)} .stamp.amber{color:var(--magenta)} .stamp.green{color:var(--green)} .stamp.violet{color:var(--purple)}
+.stamp.red{color:var(--cobalt)} .stamp.amber{color:#8A6D00;background:rgba(255,228,92,.6)} .stamp.green{color:var(--green)} .stamp.violet{color:var(--purple)}
 .players{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
 .players li{border:2px solid var(--ink);border-radius:var(--wob2);padding:8px 12px;background:#fff;display:flex;justify-content:space-between;gap:8px;align-items:center}
 .players li .who{font-family:var(--hand);font-weight:700;font-size:18px}
@@ -97,10 +97,10 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
 .tags span{font-family:var(--hand);font-weight:700;font-size:14px;padding:1px 9px;border-radius:var(--wob2);border:2px solid;transform:rotate(-1deg)}
 .tags span:nth-child(2){transform:rotate(1.2deg)}
-.t-exag{color:var(--magenta)} .t-drop{color:var(--cobalt)} .t-inv{color:var(--purple)} .t-keep{color:var(--green)}
+.t-exag{color:#8A6D00;background:rgba(255,228,92,.6)} .t-drop{color:var(--cobalt)} .t-inv{color:var(--purple)} .t-keep{color:var(--green)}
 del{color:var(--cobalt);text-decoration:line-through;text-decoration-thickness:2px;opacity:.85}
 ins.inv{text-decoration:none;background:rgba(122,63,224,.16);border-bottom:2px solid var(--purple);padding:0 2px}
-ins.exag{text-decoration:none;background:rgba(242,106,27,.18);border-bottom:2px solid var(--magenta);padding:0 2px}
+ins.exag{text-decoration:none;background:rgba(255,228,92,.85);border-bottom:2px solid #E0B800;padding:0 2px;color:var(--ink)}
 ins.add{text-decoration:none;border-bottom:2px dotted var(--mute)}
 .worst{font-family:var(--hand);font-weight:700;font-size:18px;color:var(--magenta);margin:10px 0 0}
 .narr{border-left:3px solid var(--purple);padding:6px 14px;margin:12px 0 0;font-family:var(--hand);font-size:19px;line-height:1.4;color:var(--purple)}
@@ -251,7 +251,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 <section class="screen" id="s-reveal">
   <h2 id="revealhead">The record.</h2>
   <p class="mute" id="revealsub"></p>
-  <div class="legend"><span><del>struck</del> = dropped</span><span><ins class="exag">amber</ins> = exaggerated</span><span><ins class="inv">violet</ins> = invented, was never in the original</span><span><ins class="add">dotted</ins> = reworded</span></div>
+  <div class="legend"><span><del>struck</del> = dropped</span><span><ins class="exag">highlighted</ins> = exaggerated</span><span><ins class="inv">violet</ins> = invented, was never in the original</span><span><ins class="add">dotted</ins> = reworded</span></div>
   <div id="memory"></div>
   <div id="chains"></div>
   <h3>Who did what</h3>
@@ -276,7 +276,7 @@ const API = "https://hearsay-room.aunysillyme.workers.dev";
    the canon likeness block (warm brown skin, long dark wavy hair with honey
    ends, full brows, almond eyes, nose stud, smirk, beauty mark, hoodie). */
 const CHARS = (() => {
-  const INK = "#14121A", BLUE = "#1E40FF", ORANGE = "#F26A1B", PURPLE = "#7A3FE0", GREEN = "#1E9E5A";
+  const INK = "#14121A", BLUE = "#1E40FF", ORANGE = "#7A3FE0", PURPLE = "#7A3FE0", GREEN = "#1E9E5A";
   const wrap = (body, w = 64, h = 84) => `<svg class="chr" width="${w}" height="${h}" viewBox="0 0 64 84" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   const head = (skin, extra = "") => `<ellipse cx="33" cy="25" rx="13" ry="14" fill="${skin}" stroke="none" transform="translate(1.5,1)" opacity=".9"/><ellipse cx="32" cy="24" rx="13" ry="14"/><path d="M20 24 C20 12 44 12 44 24" stroke-width="1" opacity=".35"/>${extra}`;
   const eyes = (dx = 0, smirk = false) => `<path d="M${26 + dx} 25 q2 -2 4 0 M${35 + dx} 25 q2 -2 4 0"/><circle cx="${28 + dx}" cy="25.5" r="1.4" fill="${INK}" stroke="none"/><circle cx="${37 + dx}" cy="25.5" r="1.4" fill="${INK}" stroke="none"/>${smirk ? `<path d="M28 32 q4 3 8 -1"/>` : `<path d="M28 32 q4 2.5 8 0"/>`}`;
@@ -288,7 +288,7 @@ const CHARS = (() => {
       head("#B9824F", `<path d="M20 20 C24 10 40 10 44 20" fill="#241A1C" stroke="none"/><path d="M22 21 C25 14 39 14 42 21"/>`) +
       `<path d="M25 21 q3 -2 6 0 M34 21 q3 -2 6 0" stroke-width="2.4"/>` + eyes(0, true) +
       `<circle cx="35" cy="29" r="1" fill="#F2C94C" stroke="none"/><circle cx="27" cy="35" r="1" fill="${INK}" stroke="none"/>` +
-      body(BLUE, `<path d="M22 46 C14 52 12 60 14 66 M44 46 C52 52 54 60 52 66"/><path d="M28 47 L38 47 L37 52 L29 52 Z" stroke-width="1.2" opacity=".6"/><path d="M33 58 l-2.5 -2.5 a1.8 1.8 0 0 1 2.5 -2.5 a1.8 1.8 0 0 1 2.5 2.5 z" fill="${ORANGE}" stroke="none"/>`)
+      body(BLUE, `<path d="M22 46 C14 52 12 60 14 66 M44 46 C52 52 54 60 52 66"/><path d="M28 47 L38 47 L37 52 L29 52 Z" stroke-width="1.2" opacity=".6"/><path d="M33 58 l-2.5 -2.5 a1.8 1.8 0 0 1 2.5 -2.5 a1.8 1.8 0 0 1 2.5 2.5 z" fill="#FFE45C" stroke="none"/>`)
     ),
     mo: wrap(
       `<path d="M18 22 L22 8 L28 16 L33 4 L38 16 L44 8 L47 22" fill="#3B2A1E" stroke="none" transform="translate(1,1)"/><path d="M18 22 L22 8 L28 16 L33 4 L38 16 L44 8 L47 22"/>` +
@@ -624,7 +624,7 @@ const D = {
   scribble: (c) => S(90, 30, `<path d="M2 20 C14 4 20 30 30 14 C40 -2 46 28 56 12 C66 -2 72 26 86 10" opacity=".8"/>`, c),
   loop: (c) => S(60, 40, `<path d="M4 30 C14 6 30 4 34 16 C38 30 20 34 22 22 C24 12 44 8 56 12"/>`, c),
 };
-const COL = { blue: "#1E40FF", pink: "#F26A1B", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
+const COL = { blue: "#1E40FF", pink: "#7A3FE0", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
 /* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
 const P = [
   ["header", "crown", "pink", "left:14px;top:-4px", -14, null, null, false],
