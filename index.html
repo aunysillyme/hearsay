@@ -20,7 +20,7 @@
    handwriting is the commentary. */
 :root{
   --paper:#FFFFFF; --card:#FFFFFF; --ink:#14121A; --mute:#6B6878; --line:#CFCAD8;
-  --cobalt:#1E40FF; --magenta:#E11D8C; --pink:#FF6FB5; --purple:#7A3FE0; --green:#1E9E5A;
+  --cobalt:#1E40FF; --magenta:#F26A1B; --pink:#FFB27A; --purple:#7A3FE0; --green:#1E9E5A;
   --red:var(--cobalt); --amber:var(--magenta); --violet:var(--purple);
   --hand:Kalam,"Comic Sans MS","Segoe Print",cursive;
   --serif:Kalam,cursive;
@@ -100,7 +100,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .t-exag{color:var(--magenta)} .t-drop{color:var(--cobalt)} .t-inv{color:var(--purple)} .t-keep{color:var(--green)}
 del{color:var(--cobalt);text-decoration:line-through;text-decoration-thickness:2px;opacity:.85}
 ins.inv{text-decoration:none;background:rgba(122,63,224,.16);border-bottom:2px solid var(--purple);padding:0 2px}
-ins.exag{text-decoration:none;background:rgba(225,29,140,.16);border-bottom:2px solid var(--magenta);padding:0 2px}
+ins.exag{text-decoration:none;background:rgba(242,106,27,.18);border-bottom:2px solid var(--magenta);padding:0 2px}
 ins.add{text-decoration:none;border-bottom:2px dotted var(--mute)}
 .worst{font-family:var(--hand);font-weight:700;font-size:18px;color:var(--magenta);margin:10px 0 0}
 .narr{border-left:3px solid var(--purple);padding:6px 14px;margin:12px 0 0;font-family:var(--hand);font-size:19px;line-height:1.4;color:var(--purple)}
@@ -474,7 +474,7 @@ const D = {
   scribble: (c) => S(90, 30, `<path d="M2 20 C14 4 20 30 30 14 C40 -2 46 28 56 12 C66 -2 72 26 86 10" opacity=".8"/>`, c),
   loop: (c) => S(60, 40, `<path d="M4 30 C14 6 30 4 34 16 C38 30 20 34 22 22 C24 12 44 8 56 12"/>`, c),
 };
-const COL = { blue: "#1E40FF", pink: "#E11D8C", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
+const COL = { blue: "#1E40FF", pink: "#F26A1B", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
 /* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
 const P = [
   ["s-home", "crown", "pink", "left:-8px;top:-34px", -14, null, null, false],
