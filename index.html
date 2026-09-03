@@ -10,94 +10,119 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://aunysillyme.github.io/hearsay/">
 <meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap">
 <style>
-  :root{
-    --paper:#F4EFE4; --card:#FFFDF8; --ink:#17140F; --mute:#6E665A; --line:#D9D1C2;
-    --red:#C63B2E; --amber:#C97F13; --green:#2E7D4F; --violet:#5B4B8A;
-    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    --mono:"Courier New",Courier,"Liberation Mono",monospace;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45}
-  body{background-image:radial-gradient(rgba(23,20,15,.035) 1px,transparent 1px);background-size:14px 14px}
-  a{color:inherit}
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:960px;margin:0 auto;padding:18px 20px 6px}
-  .wordmark{font-family:var(--serif);font-size:28px;letter-spacing:-.5px;text-decoration:none;font-weight:700}
-  .wordmark small{font-family:var(--sans);font-size:12px;color:var(--mute);font-weight:400;letter-spacing:.08em;text-transform:uppercase;margin-left:10px;white-space:nowrap}
-  @media (max-width:520px){.wordmark small{display:none}}
-  .roomchip{font-family:var(--mono);font-size:13px;color:var(--mute);display:none;gap:10px;align-items:center}
-  .roomchip b{color:var(--ink);letter-spacing:.12em}
-  .roomchip button{padding:4px 8px;font-size:12px}
-  main{max-width:960px;margin:0 auto;padding:10px 20px 60px}
-  .screen{display:none}
-  .screen.on{display:block}
-  h1{font-family:var(--serif);font-size:clamp(34px,6vw,58px);line-height:1;margin:26px 0 8px;letter-spacing:-1px}
-  h2{font-family:var(--serif);font-size:26px;margin:22px 0 8px}
-  h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:18px 0 8px}
-  p{margin:8px 0}
-  .lede{font-size:19px;max-width:620px}
-  .mute{color:var(--mute)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin:12px 0;box-shadow:0 1px 0 rgba(23,20,15,.06)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  input,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:4px;padding:10px 12px;width:100%}
-  input:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:1px}
-  input.code{font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;width:150px}
-  textarea{min-height:96px;resize:vertical;font-family:var(--mono);font-size:15px}
-  button{font:inherit;cursor:pointer;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:4px;padding:10px 16px;font-weight:600}
-  button.alt{background:transparent;color:var(--ink)}
-  button.quiet{background:transparent;color:var(--mute);border-color:var(--line)}
-  button.big{font-size:18px;padding:14px 22px}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  .stamp{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;border:1.5px solid currentColor;border-radius:3px;padding:2px 7px;transform:rotate(-1.2deg)}
-  .stamp.red{color:var(--red)} .stamp.amber{color:var(--amber)} .stamp.green{color:var(--green)} .stamp.violet{color:var(--violet)}
-  .players{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-  .players li{border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:#fff;display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .players li .who{font-weight:600}
-  .players li .bio{font-size:12px;color:var(--mute)}
-  .dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
-  .dot.done{background:var(--green)}
-  .exhibit{font-family:var(--mono);font-size:17px;line-height:1.5;padding:16px 18px;background:#fff;border:1px dashed var(--line);border-radius:4px;min-height:70px;position:relative}
-  .exhibit.hidden{color:transparent;text-shadow:0 0 14px rgba(23,20,15,.55);user-select:none}
-  .exhibit.hidden::after{content:"You have had your look. Retell it from memory.";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mute);text-shadow:none;font-family:var(--sans);font-size:14px;text-align:center;padding:10px}
-  .timer{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:10px 0 4px}
-  .timer i{display:block;height:100%;background:var(--red);width:100%;transition:width .25s linear}
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:18px 0}
-  .steps .card{margin:0}
-  .steps b{display:block;font-family:var(--serif);font-size:20px;margin-bottom:4px}
-  .chain{margin:22px 0}
-  .side{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:640px){.side{grid-template-columns:1fr}}
-  .side .card{margin:0}
-  .fid{font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:6px}
-  .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:4px}
-  .bar i{display:block;height:100%;background:var(--green)}
-  .hop{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
-  @media (max-width:640px){.hop{grid-template-columns:1fr}}
-  .hop .by{font-weight:600}
-  .hop .by small{display:block;font-weight:400;color:var(--mute);font-size:12px}
-  .hop .text{font-family:var(--mono);font-size:15px;line-height:1.6}
-  .tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
-  .tags span{font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid}
-  .t-exag{color:var(--amber);border-color:var(--amber)} .t-drop{color:var(--red);border-color:var(--red)} .t-inv{color:var(--violet);border-color:var(--violet)} .t-keep{color:var(--green);border-color:var(--green)}
-  del{color:var(--red);text-decoration:line-through;opacity:.8}
-  ins.inv{text-decoration:none;background:rgba(91,75,138,.16);border-bottom:2px solid var(--violet);padding:0 2px}
-  ins.exag{text-decoration:none;background:rgba(201,127,19,.2);border-bottom:2px solid var(--amber);padding:0 2px}
-  ins.add{text-decoration:none;border-bottom:1px dotted var(--mute)}
-  .worst{font-family:var(--mono);font-size:13px;color:var(--red);margin:10px 0 0}
-  .narr{border-left:3px solid var(--violet);padding:6px 12px;margin:12px 0 0;font-family:var(--serif);font-size:17px}
-  .narr small{display:block;font-family:var(--sans);font-size:11px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
-  th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
-  td.num{font-family:var(--mono)}
-  .verdict{font-family:var(--serif);font-style:italic}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin:8px 0}
-  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:4px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
-  #toast.on{opacity:1}
-  .waiting{font-family:var(--mono);font-size:14px;color:var(--mute)}
-  .kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:3px;padding:1px 5px;background:#fff}
-  footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:12px;border-top:1px solid var(--line)}
+/* HEARSAY in Sketchy: a bright white sketchbook page. Loose colored pencil,
+   hand-lettered captions, doodles scattered like an illustrator's overflow.
+   Palette from the Sketchy spec: cobalt + magenta on white, pink and purple
+   handwriting. Exhibits stay typewriter mono: they are the evidence, the
+   handwriting is the commentary. */
+:root{
+  --paper:#FFFFFF; --card:#FFFFFF; --ink:#14121A; --mute:#6B6878; --line:#CFCAD8;
+  --cobalt:#1E40FF; --magenta:#E11D8C; --pink:#FF6FB5; --purple:#7A3FE0; --green:#1E9E5A;
+  --red:var(--cobalt); --amber:var(--magenta); --violet:var(--purple);
+  --hand:Kalam,"Comic Sans MS","Segoe Print",cursive;
+  --serif:Kalam,cursive;
+  --mono:"Courier New",Courier,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --wob:255px 15px 225px 15px / 15px 225px 15px 255px;
+  --wob2:15px 225px 15px 255px / 255px 15px 225px 15px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+body{overflow-x:hidden}
+a{color:inherit}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:960px;margin:0 auto;padding:18px 20px 6px;position:relative}
+.wordmark{font-family:var(--hand);font-weight:700;font-size:34px;text-decoration:none;color:var(--ink);position:relative;display:inline-block}
+.wordmark::after{content:"";position:absolute;left:-2px;right:-6px;bottom:2px;height:8px;background:var(--pink);opacity:.45;z-index:-1;transform:rotate(-1.5deg);border-radius:4px}
+.wordmark small{font-family:var(--hand);font-size:15px;color:var(--purple);font-weight:400;margin-left:10px;white-space:nowrap;letter-spacing:0;text-transform:none}
+@media (max-width:520px){.wordmark small{display:none}}
+.roomchip{font-family:var(--hand);font-size:16px;color:var(--mute);display:none;gap:10px;align-items:center}
+.roomchip b{color:var(--cobalt);letter-spacing:.12em;font-family:var(--mono)}
+.roomchip button{padding:3px 10px;font-size:14px}
+main{max-width:960px;margin:0 auto;padding:10px 20px 60px}
+.screen{display:none;position:relative}
+.screen.on{display:block}
+h1{font-family:var(--hand);font-weight:700;font-size:clamp(36px,6.5vw,62px);line-height:1.05;margin:26px 0 8px;position:relative}
+h1 mark{background:none;color:var(--magenta);position:relative}
+h2{font-family:var(--hand);font-weight:700;font-size:32px;margin:22px 0 6px}
+h3{font-family:var(--hand);font-size:18px;color:var(--purple);margin:18px 0 6px;font-weight:700;letter-spacing:0;text-transform:none}
+p{margin:8px 0}
+.lede{font-size:18px;max-width:640px}
+.mute{color:var(--mute)}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:var(--wob);padding:18px 22px;margin:14px 0;position:relative}
+.card.alt{border-radius:var(--wob2)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,textarea{font:inherit;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:8px 14px 6px 12px;padding:10px 12px;width:100%}
+input:focus,textarea:focus{outline:none;border-color:var(--cobalt);box-shadow:3px 3px 0 var(--pink)}
+input.code{font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;width:150px}
+textarea{min-height:96px;resize:vertical;font-family:var(--mono);font-size:15px}
+button{font-family:var(--hand);font-weight:700;font-size:17px;cursor:pointer;border:2px solid var(--ink);background:var(--cobalt);color:#fff;border-radius:var(--wob);padding:9px 18px;box-shadow:3px 3px 0 var(--ink);transition:transform .08s}
+button:hover{transform:translate(-1px,-1px) rotate(-.6deg)}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+button.alt{background:#fff;color:var(--ink)}
+button.quiet{background:#fff;color:var(--mute);border-color:var(--mute);box-shadow:2px 2px 0 var(--mute);font-size:15px}
+button.big{font-size:22px;padding:13px 24px;background:var(--magenta)}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.stamp{display:inline-block;font-family:var(--hand);font-weight:700;font-size:14px;border:2px solid currentColor;border-radius:var(--wob2);padding:1px 10px;transform:rotate(-1.5deg);color:var(--purple)}
+.stamp.red{color:var(--cobalt)} .stamp.amber{color:var(--magenta)} .stamp.green{color:var(--green)} .stamp.violet{color:var(--purple)}
+.players{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.players li{border:2px solid var(--ink);border-radius:var(--wob2);padding:8px 12px;background:#fff;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.players li .who{font-family:var(--hand);font-weight:700;font-size:18px}
+.players li .bio{font-size:13px;color:var(--purple);font-family:var(--hand)}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);background:#fff;flex:none}
+.dot.done{background:var(--green)}
+.exhibit{font-family:var(--mono);font-size:17px;line-height:1.55;padding:16px 18px;background:#fff;border:2px dashed var(--cobalt);border-radius:6px 16px 8px 14px;min-height:70px;position:relative}
+.exhibit.hidden{color:transparent;text-shadow:0 0 14px rgba(20,18,26,.5);user-select:none}
+.exhibit.hidden::after{content:"you had your look. retell it from memory.";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--magenta);text-shadow:none;font-family:var(--hand);font-weight:700;font-size:20px;text-align:center;padding:10px}
+.timer{height:8px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:10px 0 4px;background:#fff}
+.timer i{display:block;height:100%;background:var(--magenta);width:100%;transition:width .25s linear}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}
+.steps .card{margin:0}
+.steps .card:nth-child(2){transform:rotate(.6deg)} .steps .card:nth-child(3){transform:rotate(-.5deg)}
+.steps b{display:block;font-family:var(--hand);font-size:24px;margin-bottom:4px;color:var(--cobalt)}
+.chain{margin:26px 0}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:640px){.side{grid-template-columns:1fr}}
+.side .card{margin:0}
+.fid{font-family:var(--hand);font-size:15px;color:var(--purple);margin-top:6px}
+.bar{height:10px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin-top:4px;background:#fff}
+.bar i{display:block;height:100%;background:var(--cobalt)}
+.hop{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-top:2px dashed var(--line)}
+@media (max-width:640px){.hop{grid-template-columns:1fr}}
+.hop .by{font-family:var(--hand);font-weight:700;font-size:20px}
+.hop .by small{display:block;font-weight:400;color:var(--mute);font-size:14px}
+.hop .text{font-family:var(--mono);font-size:15px;line-height:1.7}
+.tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+.tags span{font-family:var(--hand);font-weight:700;font-size:14px;padding:1px 9px;border-radius:var(--wob2);border:2px solid;transform:rotate(-1deg)}
+.tags span:nth-child(2){transform:rotate(1.2deg)}
+.t-exag{color:var(--magenta)} .t-drop{color:var(--cobalt)} .t-inv{color:var(--purple)} .t-keep{color:var(--green)}
+del{color:var(--cobalt);text-decoration:line-through;text-decoration-thickness:2px;opacity:.85}
+ins.inv{text-decoration:none;background:rgba(122,63,224,.16);border-bottom:2px solid var(--purple);padding:0 2px}
+ins.exag{text-decoration:none;background:rgba(225,29,140,.16);border-bottom:2px solid var(--magenta);padding:0 2px}
+ins.add{text-decoration:none;border-bottom:2px dotted var(--mute)}
+.worst{font-family:var(--hand);font-weight:700;font-size:18px;color:var(--magenta);margin:10px 0 0}
+.narr{border-left:3px solid var(--purple);padding:6px 14px;margin:12px 0 0;font-family:var(--hand);font-size:19px;line-height:1.4;color:var(--purple)}
+.narr small{display:block;font-family:var(--sans);font-size:11px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.narr[style]{color:var(--magenta)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:2px dashed var(--line)}
+th{font-family:var(--hand);font-size:16px;color:var(--purple);letter-spacing:0;text-transform:none}
+td.num{font-family:var(--mono)}
+.verdict{font-family:var(--hand);font-weight:700;color:var(--magenta);font-size:17px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--mute);margin:8px 0;font-family:var(--hand)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) rotate(-1deg);background:var(--ink);color:#fff;padding:10px 18px;border-radius:var(--wob);font-family:var(--hand);font-weight:700;font-size:17px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.on{opacity:1}
+.waiting{font-family:var(--hand);font-size:18px;color:var(--purple)}
+footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13px;border-top:2px dashed var(--line);font-family:var(--hand);position:relative}
+/* doodles: the illustrator's overflow */
+.dd{position:absolute;pointer-events:none;z-index:1;line-height:1}
+.dd svg{display:block;overflow:visible}
+.dd .cap{font-family:var(--hand);font-weight:700;color:var(--purple);white-space:nowrap;font-size:17px}
+.dd .cap.pink{color:var(--magenta)} .dd .cap.blue{color:var(--cobalt)}
+@media (max-width:760px){.dd.wide{display:none}}
+.scrib{position:absolute;pointer-events:none;z-index:0;opacity:.35}
 </style>
 </head>
 <body>
@@ -109,7 +134,7 @@
 
 <!-- HOME -->
 <section class="screen on" id="s-home">
-  <h1>Every rumor has a chain of custody.<br>This one shows it.</h1>
+  <h1>Every rumor has a chain of custody.<br><mark>This one shows it.</mark></h1>
   <p class="lede">Pass a message down the line. Everyone gets <b>one look</b> at what reached them, then retells it from memory. At the end, every version is laid out, every change is tagged <span class="stamp amber">exaggerated</span> <span class="stamp red">dropped</span> or <span class="stamp violet">invented</span>, and each one is pinned to the person who made it.</p>
   <div class="card">
     <div class="row">
@@ -403,6 +428,66 @@ document.querySelector(".wordmark").addEventListener("click", (e) => { e.prevent
   const id = localStorage.getItem("hearsay:" + c); if (id) { enter(c, id); return; }
   toast("Room " + c + ": put your name in and press Join.");
 })();
+})();
+</script>
+<script>
+/* Sketchy doodle kit: crown, stars, hearts, coffee mug, headphones, potted
+   plant, black cat, sparkles, arrows. Loose strokes, scattered by hand. */
+(() => {
+const S = (w, h, body, col) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const D = {
+  star: (c) => S(30, 30, `<path d="M15 3 L18.5 11.5 L27 12 L20.5 17.5 L22.8 26.5 L15 21.5 L7.2 26.5 L9.5 17.5 L3 12 L11.5 11.5 Z"/><path d="M14.4 4.2 L17.6 10.8" stroke-width="1.2" opacity=".6"/>`, c),
+  heart: (c) => S(28, 26, `<path d="M14 23 C4 15 2 9 6 5 C9 2 13 4 14 7 C15 4 19 2 22 5 C26 9 24 15 14 23 Z"/><path d="M7.5 8 C8 6.5 9.5 6 10.5 6.5" stroke-width="1.2" opacity=".6"/>`, c),
+  sparkle: (c) => S(26, 26, `<path d="M13 2 L14.5 11.5 L24 13 L14.5 14.5 L13 24 L11.5 14.5 L2 13 L11.5 11.5 Z"/><path d="M21 3 L21.6 5.4 L24 6 L21.6 6.6 L21 9 L20.4 6.6 L18 6 L20.4 5.4 Z" stroke-width="1.5"/>`, c),
+  arrow: (c) => S(70, 44, `<path d="M4 36 C20 34 36 22 50 10 C56 5 60 4 64 6"/><path d="M62 2 L66 7 L60 10"/><path d="M6 38 C22 36 36 26 48 14" stroke-width="1.1" opacity=".5"/>`, c),
+  arrowdown: (c) => S(44, 60, `<path d="M8 4 C12 22 20 40 34 52"/><path d="M34 44 L36 54 L26 53"/>`, c),
+  mug: (c) => S(40, 40, `<path d="M8 14 L28 14 L26 34 L10 34 Z"/><path d="M28 18 C36 18 36 28 27 28"/><path d="M13 5 C13 9 17 9 17 5" opacity=".7"/><path d="M20 4 C20 8 24 8 24 4" opacity=".7"/><path d="M10 17 L27 17" stroke-width="1.2" opacity=".5"/>`, c),
+  headphones: (c) => S(44, 40, `<path d="M6 30 C4 14 12 6 22 6 C32 6 40 14 38 30"/><path d="M6 22 L11 22 L12 34 L6 34 Z"/><path d="M38 22 L33 22 L32 34 L38 34 Z"/><path d="M14 36 L30 36" stroke-width="1.2" opacity=".5"/>`, c),
+  plant: (c) => S(40, 48, `<path d="M11 30 L29 30 L26 46 L14 46 Z"/><path d="M20 30 C20 20 14 14 8 12 C14 10 20 14 20 22"/><path d="M20 30 C20 20 26 12 33 10 C28 14 24 20 20 26"/><path d="M20 30 C21 24 20 18 20 14"/>`, c),
+  cat: (c) => S(56, 44, `<path d="M8 40 C6 30 8 18 14 14 L12 4 L20 10 L28 10 L36 4 L34 14 C40 18 42 30 40 40 Z" fill="${c}"/><path d="M40 34 C48 32 52 26 50 20" /><path d="M17 22 L21 22 M27 22 L31 22" stroke="#fff" stroke-width="2.5"/><path d="M22 28 L26 28 L24 30 Z" stroke="#fff" stroke-width="1.5"/>`, c),
+  crown: (c) => S(50, 40, `<path d="M6 32 L4 10 L16 20 L25 4 L34 20 L46 10 L44 32 Z"/><path d="M6 32 L44 32" stroke-width="2.8"/><circle cx="4" cy="9" r="2"/><circle cx="25" cy="3" r="2"/><circle cx="46" cy="9" r="2"/>`, c),
+  scribble: (c) => S(90, 30, `<path d="M2 20 C14 4 20 30 30 14 C40 -2 46 28 56 12 C66 -2 72 26 86 10" opacity=".8"/>`, c),
+  loop: (c) => S(60, 40, `<path d="M4 30 C14 6 30 4 34 16 C38 30 20 34 22 22 C24 12 44 8 56 12"/>`, c),
+};
+const COL = { blue: "#1E40FF", pink: "#E11D8C", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
+/* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
+const P = [
+  ["s-home", "crown", "pink", "left:-8px;top:-34px", -14, null, null, false],
+  ["s-home", "sparkle", "blue", "right:6%;top:-6px", 10, null, null, false],
+  ["s-home", "star", "pink", "right:14%;top:40px", 20, null, null, true],
+  ["s-home", "arrow", "purple", "left:42%;top:198px", -30, "start here!!", "above", true],
+  ["s-home", "heart", "pink", "right:2%;top:250px", 14, null, null, true],
+  ["s-home", "mug", "blue", "right:-4px;top:520px", 8, "coffee = fuel", "below", true],
+  ["s-home", "headphones", "purple", "left:-10px;top:560px", -10, null, null, true],
+  ["s-home", "cat", "ink", "right:3%;bottom:-6px", 0, "the cat heard it first", "above", true],
+  ["s-home", "plant", "green", "left:-6px;bottom:-14px", 4, null, null, true],
+  ["s-seed", "arrowdown", "pink", "right:8%;top:-4px", 10, "be specific!", "above", true],
+  ["s-seed", "sparkle", "purple", "left:-6px;top:120px", -8, null, null, true],
+  ["s-seed", "mug", "blue", "right:-6px;bottom:0", -6, null, null, true],
+  ["s-pass", "star", "pink", "right:4%;top:-10px", 18, "no peeking!!", "below", true],
+  ["s-pass", "headphones", "blue", "left:-12px;top:150px", -14, null, null, true],
+  ["s-pass", "heart", "purple", "right:-4px;bottom:40px", 12, "from memory ↑", "above", true],
+  ["s-wait", "loop", "purple", "right:6%;top:0", 0, "waiting is part of it", "below", true],
+  ["s-wait", "cat", "ink", "left:-4px;bottom:-10px", 0, null, null, true],
+  ["s-lobby", "crown", "pink", "right:6%;top:-16px", 12, "host", "below", true],
+  ["s-lobby", "plant", "green", "left:-8px;bottom:-6px", -4, null, null, true],
+  ["s-reveal", "arrow", "pink", "left:48%;top:-14px", 200, "who bent it?", "below", true],
+  ["s-reveal", "star", "blue", "right:2%;top:10px", -12, null, null, true],
+  ["s-reveal", "sparkle", "pink", "right:8%;top:70px", 24, null, null, true],
+  ["s-reveal", "scribble", "purple", "left:-10px;top:180px", -80, null, null, true],
+  ["s-reveal", "heart", "blue", "left:-4px;bottom:120px", -10, null, null, true],
+  ["s-reveal", "cat", "ink", "right:-2px;bottom:-4px", 0, "told you so", "above", true],
+];
+P.forEach(([sc, d, col, pos, rot, cap, side, wide]) => {
+  const host = document.getElementById(sc); if (!host) return;
+  const el = document.createElement("div"); el.className = "dd" + (wide ? " wide" : ""); el.style.cssText = pos;
+  const inner = `<div style="transform:rotate(${rot}deg)">${D[d](COL[col])}</div>`;
+  const c = cap ? `<div class="cap ${col === "pink" ? "pink" : col === "blue" ? "blue" : ""}" style="transform:rotate(${(rot % 7) - 3}deg)">${cap}</div>` : "";
+  el.innerHTML = side === "above" ? c + inner : inner + c;
+  host.appendChild(el);
+});
+/* faint construction lines behind the big headline, like a pencil grid */
+document.querySelectorAll("h1").forEach((h) => { const s = document.createElement("div"); s.className = "scrib"; s.style.cssText = "left:-20px;right:-20px;top:-6px;height:100%"; s.innerHTML = `<svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" stroke="#1E40FF" stroke-width=".3" fill="none"><path d="M0 30 L100 28 M0 62 L100 60 M0 94 L100 92"/></svg>`; h.style.position = "relative"; h.appendChild(s); });
 })();
 </script>
 </body>
