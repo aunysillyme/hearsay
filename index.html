@@ -493,11 +493,16 @@ function analyseHop(origT, prevT, curT) {
   }).join(" ");
   return { dropped, invented, exag, reworded, marked };
 }
+/* Fidelity: how much of the original's substance survives, minus what was
+   added that was never there. Invented content words cost as much as dropped
+   ones, so a retelling that keeps everything and adds three things is not
+   "100% intact". */
 function fidelity(origT, curT) {
   const bag = new Map(); origT.forEach((x) => { if (!STOP.has(x.n)) bag.set(x.n, (bag.get(x.n) || 0) + 1); });
-  const total = [...bag.values()].reduce((a, b) => a + b, 0) || 1; let kept = 0;
-  curT.forEach((x) => { const c = bag.get(x.n); if (c) { kept++; bag.set(x.n, c - 1); } });
-  return Math.round(kept / total * 100);
+  const origStems = new Set(origT.map((x) => stem(x.n)));
+  const total = [...bag.values()].reduce((a, b) => a + b, 0) || 1; let kept = 0, added = 0;
+  curT.forEach((x) => { const c = bag.get(x.n); if (c) { kept++; bag.set(x.n, c - 1); } else if (!STOP.has(x.n) && !origStems.has(stem(x.n))) added++; });
+  return Math.max(0, Math.round((kept - added) / total * 100));
 }
 function analyseChain(ch) {
   const T = ch.versions.map((v) => tok(v.text));
@@ -537,7 +542,7 @@ function renderReveal(v) {
       <div class="row" style="justify-content:space-between"><span class="stamp">rumor ${c + 1} · started by ${esc(ch.seedBy)}</span><span class="stamp ${an.fid >= 70 ? "green" : an.fid >= 40 ? "amber" : "red"}">${an.fid}% survived</span></div>
       <div class="side" style="margin-top:12px">
         <div class="card"><h3 style="margin-top:0">Original · ${esc(orig.by)}</h3><div class="exhibit">${esc(orig.text)}</div></div>
-        <div class="card"><h3 style="margin-top:0">Final · ${esc(fin.by)}</h3><div class="exhibit">${esc(fin.text)}</div><div class="fid">${an.fid}% of the original's substance made it</div><div class="bar"><i style="width:${an.fid}%"></i></div></div>
+        <div class="card"><h3 style="margin-top:0">Final · ${esc(fin.by)}</h3><div class="exhibit">${esc(fin.text)}</div><div class="fid">${an.fid}% intact: what survived, minus what was made up</div><div class="bar"><i style="width:${an.fid}%"></i></div></div>
       </div>
       ${w && w.loss > 0 ? `<p class="worst">Bent most at hop ${an.worst + 1}, by ${esc(w.by)}: lost ${w.loss} points of fidelity in one pass.</p>` : ""}
       <h3>Hop by hop</h3>
