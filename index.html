@@ -626,11 +626,7 @@ const D = {
 };
 const COL = { blue: "#1E40FF", pink: "#7A3FE0", purple: "#7A3FE0", ink: "#14121A", green: "#1E9E5A" };
 /* placements: [screen id, doodle, colour, css position, rotate, caption, caption side, wide-only] */
-const P = [
-  ["header", "crown", "pink", "left:14px;top:-4px", -14, null, null, false],
-  ["footer", "cat", "ink", "right:20px;top:-32px", 0, null, null, true],
-  ["footer", "plant", "green", "left:12px;top:-40px", 4, null, null, true],
-];
+const P = [];
 P.forEach(([sc, d, col, pos, rot, cap, side, wide]) => {
   const host = sc.startsWith("#") || sc === "footer" || sc === "header" ? document.querySelector(sc) : document.getElementById(sc); if (!host) return; if (getComputedStyle(host).position === "static") host.style.position = "relative";
   const el = document.createElement("div"); el.className = "dd" + (wide ? " wide" : ""); el.style.cssText = pos;
