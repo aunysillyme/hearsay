@@ -453,7 +453,7 @@ export class Room {
         answered, sinceMs: Date.now() - L.startedAt,
         pending: L.over ? [] : humans.filter((i) => !L.answers[i]).map((i) => r.players[i].name),
         last: L.last,
-        board: r.players.map((p, i) => ({ name: p.name, bot: p.bot, total: L.totals[i] || 0, best: L.bests[i] || 0, reached: L.reached[i] || 0 })).sort((a, b) => b.total - a.total),
+        board: r.players.map((p, i) => ({ name: p.name, bot: p.bot, total: L.totals[i] || 0, best: L.bests[i] || 0, reached: L.reached[i] || 0 })).sort((a, b) => b.total - a.total || (a.bot ? 1 : 0) - (b.bot ? 1 : 0)),
       };
       players.forEach((p, i) => { p.done = r.players[i].bot ? null : !!L.answers[i]; });
     }
