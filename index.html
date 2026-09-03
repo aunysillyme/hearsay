@@ -116,6 +116,17 @@ td.num{font-family:var(--mono)}
 #toast.on{opacity:1}
 .waiting{font-family:var(--hand);font-size:18px;color:var(--purple)}
 footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13px;border-top:2px dashed var(--line);font-family:var(--hand);position:relative}
+/* the crew */
+.chr{display:inline-block;vertical-align:middle}
+.line{display:flex;align-items:flex-end;gap:2px;flex-wrap:wrap;margin:6px 0 4px}
+.line .who{display:flex;flex-direction:column;align-items:center;font-family:var(--hand);font-weight:700;font-size:14px;color:var(--purple)}
+.line .who small{font-weight:400;color:var(--mute);font-size:12px}
+.line .note{font-family:var(--hand);color:var(--magenta);font-size:20px;align-self:center;margin:0 2px 30px}
+.players li .av{display:flex;align-items:center;gap:8px}
+.players li .av svg{width:34px;height:44px}
+.hop .by svg{width:30px;height:40px;vertical-align:-14px;margin-right:4px}
+td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
+#passwho svg{width:46px;height:60px;vertical-align:middle;margin-right:6px}
 /* doodles: the illustrator's overflow */
 .dd{position:absolute;pointer-events:none;z-index:1;line-height:1}
 .dd svg{display:block;overflow:visible}
@@ -149,6 +160,7 @@ footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13
       <button class="alt" id="b-join">Join</button>
     </div>
   </div>
+  <div class="line" id="homeline"></div>
   <div class="steps">
     <div class="card"><b>1. One look</b>The version that reached you shows for twelve seconds, then it is gone, and the line gets faster every hop. Pasting is off. What you pass on is what you remember.</div>
     <div class="card"><b>2. Every hop kept</b>The room keeps every version and shows you only yours. Nobody sees the chain until it is finished.</div>
@@ -188,7 +200,7 @@ footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13
   <h2 id="passhead">Something reached you.</h2>
   <p class="mute" id="passsub"></p>
   <div class="card">
-    <div class="row" style="justify-content:space-between"><span class="stamp">exhibit · from <span id="passfrom"></span></span><span class="mute" id="passclock">12s</span></div>
+    <div class="row" style="justify-content:space-between"><span id="passwho"></span><span class="stamp">exhibit · from <span id="passfrom"></span></span><span class="mute" id="passclock">12s</span></div>
     <div class="timer"><i id="passbar"></i></div>
     <div class="exhibit" id="passtext"></div>
     <div class="row" style="margin-top:8px"><button class="quiet" id="b-seen">I've read it, hide it</button></div>
@@ -238,6 +250,69 @@ footer{max-width:960px;margin:0 auto;padding:20px;color:var(--mute);font-size:13
 <script>
 (() => {
 const API = "https://hearsay-room.aunysillyme.workers.dev";
+/* The crew, drawn as loose Sketch Me chibis: pencil outline, an offset
+   painterly fill, a construction line left showing. Auny's own sketch follows
+   the canon likeness block (warm brown skin, long dark wavy hair with honey
+   ends, full brows, almond eyes, nose stud, smirk, beauty mark, hoodie). */
+const CHARS = (() => {
+  const INK = "#14121A", BLUE = "#1E40FF", ORANGE = "#F26A1B", PURPLE = "#7A3FE0", GREEN = "#1E9E5A";
+  const wrap = (body, w = 64, h = 84) => `<svg class="chr" width="${w}" height="${h}" viewBox="0 0 64 84" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const head = (skin, extra = "") => `<ellipse cx="33" cy="25" rx="13" ry="14" fill="${skin}" stroke="none" transform="translate(1.5,1)" opacity=".9"/><ellipse cx="32" cy="24" rx="13" ry="14"/><path d="M20 24 C20 12 44 12 44 24" stroke-width="1" opacity=".35"/>${extra}`;
+  const eyes = (dx = 0, smirk = false) => `<path d="M${26 + dx} 25 q2 -2 4 0 M${35 + dx} 25 q2 -2 4 0"/><circle cx="${28 + dx}" cy="25.5" r="1.4" fill="${INK}" stroke="none"/><circle cx="${37 + dx}" cy="25.5" r="1.4" fill="${INK}" stroke="none"/>${smirk ? `<path d="M28 32 q4 3 8 -1"/>` : `<path d="M28 32 q4 2.5 8 0"/>`}`;
+  const body = (col, arms) => `<path d="M22 44 L44 44 L47 68 L19 68 Z" fill="${col}" stroke="none" transform="translate(1.5,1.5)" opacity=".85"/><path d="M22 44 L44 44 L47 68 L19 68 Z"/><path d="M26 68 L25 80 M39 68 L40 80"/>${arms}`;
+  return {
+    auny: wrap(
+      `<path d="M17 30 C14 16 22 6 33 6 C46 6 52 16 48 32 L50 52 C46 50 44 44 44 40 L20 40 C20 46 17 50 14 52 Z" fill="#241A1C" stroke="none" transform="translate(1,1)"/><path d="M17 30 C14 16 22 6 33 6 C46 6 52 16 48 32 L50 52 C46 50 44 44 44 40 L20 40 C20 46 17 50 14 52 Z"/>` +
+      `<path d="M15 44 C16 50 14 52 14 52 M49 44 C48 50 50 52 50 52" stroke="#C98A3E" stroke-width="3" opacity=".8"/>` +
+      head("#B9824F", `<path d="M20 20 C24 10 40 10 44 20" fill="#241A1C" stroke="none"/><path d="M22 21 C25 14 39 14 42 21"/>`) +
+      `<path d="M25 21 q3 -2 6 0 M34 21 q3 -2 6 0" stroke-width="2.4"/>` + eyes(0, true) +
+      `<circle cx="35" cy="29" r="1" fill="#F2C94C" stroke="none"/><circle cx="27" cy="35" r="1" fill="${INK}" stroke="none"/>` +
+      body(BLUE, `<path d="M22 46 C14 52 12 60 14 66 M44 46 C52 52 54 60 52 66"/><path d="M28 47 L38 47 L37 52 L29 52 Z" stroke-width="1.2" opacity=".6"/><path d="M33 58 l-2.5 -2.5 a1.8 1.8 0 0 1 2.5 -2.5 a1.8 1.8 0 0 1 2.5 2.5 z" fill="${ORANGE}" stroke="none"/>`)
+    ),
+    mo: wrap(
+      `<path d="M18 22 L22 8 L28 16 L33 4 L38 16 L44 8 L47 22" fill="#3B2A1E" stroke="none" transform="translate(1,1)"/><path d="M18 22 L22 8 L28 16 L33 4 L38 16 L44 8 L47 22"/>` +
+      head("#D9A277") + `<path d="M26 24 q2 -2 4 0 M35 24 q2 -2 4 0"/><circle cx="28" cy="24.5" r="1.4" fill="${INK}" stroke="none"/><circle cx="37" cy="24.5" r="1.4" fill="${INK}" stroke="none"/><ellipse cx="32" cy="33" rx="4" ry="3" fill="${INK}" stroke="none"/>` +
+      body(ORANGE, `<path d="M22 46 C12 40 8 30 10 22 M44 46 C54 40 58 30 56 22"/><path d="M8 20 l-3 -4 M12 18 l0 -5 M56 20 l3 -4 M52 18 l0 -5" stroke="${ORANGE}"/>`)
+    ),
+    dee: wrap(
+      `<path d="M17 30 C15 12 24 6 32 6 C42 6 50 12 47 30 L46 36 L18 36 Z" fill="#5A3A2A" stroke="none" transform="translate(1,1)"/><path d="M17 30 C15 12 24 6 32 6 C42 6 50 12 47 30 L46 36 L18 36 Z"/>` +
+      head("#C68B5B", `<path d="M20 20 C24 12 40 12 44 20" fill="#5A3A2A" stroke="none"/>`) + eyes() +
+      body(PURPLE, `<path d="M22 46 C16 50 14 58 16 66 M44 46 C50 40 46 28 40 18"/><path d="M50 6 C56 6 56 14 51 14 M51 17 l0 .5" stroke="${PURPLE}" stroke-width="2.4"/>`)
+    ),
+    fabi: wrap(
+      `<path d="M16 22 C16 10 48 10 48 22 L54 24 L16 24 Z" fill="${GREEN}" stroke="none" transform="translate(1,1)" opacity=".85"/><path d="M16 22 C16 10 48 10 48 22 L54 24 L16 24 Z"/>` +
+      head("#E8B892") + `<path d="M26 26 l4 0 M35 26 l4 0"/><path d="M27 33 q5 3 9 -1"/>` +
+      body(GREEN, `<path d="M22 46 C14 50 12 58 14 66 M44 46 C48 42 44 36 38 34 M36 34 l4 2 l-4 3"/><path d="M50 30 q4 2 0 4 M54 27 q6 3 0 6" stroke="${GREEN}" stroke-width="1.6" opacity=".8"/>`)
+    ),
+    sal: wrap(
+      `<path d="M18 28 C16 12 26 6 32 6 C40 6 48 12 46 28 L44 22 L20 22 Z" fill="#1C1C22" stroke="none" transform="translate(1,1)"/><path d="M18 28 C16 12 26 6 32 6 C40 6 48 12 46 28 L44 22 L20 22 Z"/><path d="M46 26 C54 32 54 44 50 50" stroke-width="2.4"/>` +
+      head("#8D5A3B") + eyes() + `<circle cx="27.5" cy="25.5" r="4.5" stroke="${BLUE}" stroke-width="1.6"/><circle cx="37.5" cy="25.5" r="4.5" stroke="${BLUE}" stroke-width="1.6"/><path d="M32 25.5 l1 0" stroke="${BLUE}"/>` +
+      body(BLUE, `<path d="M22 46 C16 50 14 56 18 62 M44 46 C50 50 50 56 46 60"/><path d="M12 58 L26 56 L27 66 L13 68 Z" fill="#fff"/><path d="M15 60 l8 -1 M15 63 l8 -1" stroke-width="1.2" opacity=".6"/>`)
+    ),
+    rae: wrap(
+      `<path d="M17 24 C17 10 47 10 47 24 L47 28 L17 28 Z" fill="${ORANGE}" stroke="none" transform="translate(1,1)" opacity=".85"/><path d="M17 24 C17 10 47 10 47 24 L47 28 L17 28 Z"/><path d="M17 20 L47 20" stroke-width="1.2" opacity=".5"/>` +
+      head("#A66A44") + `<path d="M26 26 q2 -2 4 0 M35 26 q2 -2 4 0"/><circle cx="28" cy="26.5" r="1.4" fill="${INK}" stroke="none"/><circle cx="37" cy="26.5" r="1.4" fill="${INK}" stroke="none"/><path d="M27 33 l10 -1"/>` +
+      body("#fff", `<path d="M22 46 C16 50 14 58 16 66 M44 46 C52 44 58 40 62 34 M58 34 l5 -1 l-3 4"/><path d="M24 50 L43 50 M25 56 L44 56 M26 62 L45 62" stroke="${ORANGE}" stroke-width="2.4"/>`)
+    ),
+    p1: wrap(
+      `<path d="M18 24 C18 8 46 8 46 24 L44 20 L20 20 Z" fill="#2A1F1A" stroke="none" transform="translate(1,1)"/><path d="M18 24 C18 8 46 8 46 24 L44 20 L20 20 Z"/>` +
+      head("#C88A62") + eyes() + body("#fff", `<path d="M22 46 C16 50 14 58 16 66 M44 46 C50 50 52 58 50 66"/><path d="M24 52 L44 52" stroke="${BLUE}" stroke-width="2.4"/>`)
+    ),
+    p2: wrap(
+      `<path d="M16 30 C14 12 22 6 32 6 C42 6 50 12 48 30 L50 44 L14 44 Z" fill="#3B2415" stroke="none" transform="translate(1,1)"/><path d="M16 30 C14 12 22 6 32 6 C42 6 50 12 48 30 L50 44 L14 44 Z"/>` +
+      head("#E0A98A", `<path d="M20 20 C24 12 40 12 44 20" fill="#3B2415" stroke="none"/>`) + eyes() + body(PURPLE, `<path d="M22 46 C16 50 14 58 16 66 M44 46 C50 50 52 58 50 66"/>`)
+    ),
+  };
+})();
+const BOTKIND = { mo: "mo", dee: "dee", fabi: "fabi", sal: "sal", rae: "rae" };
+function charFor(p, idx) {
+  if (p.bot) return BOTKIND[p.name.toLowerCase()] || "p1";
+  if (/auny/i.test(p.name) || p.me) return "auny";
+  let h = 0; for (const ch of p.name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % 2 ? "p1" : "p2";
+}
+const charByName = (v, name) => { const p = v.players.find((x) => x.name === name); return p ? CHARS[charFor(p)] : ""; };
+
 const $ = (id) => document.getElementById(id);
 const S = { code: null, id: null, view: null, timer: null, glance: null, glanceKey: null, rendered: null, poller: null };
 
@@ -283,7 +358,7 @@ function render(v) {
   if (v.phase === "reveal") return renderReveal(v);
 }
 function playerList(el, v) {
-  el.innerHTML = v.players.map((p) => `<li><span><span class="who">${esc(p.name)}${p.me ? " (you)" : ""}</span>${p.bot ? `<span class="bio"> · gossip, ${esc(p.bio)}</span>` : ""}</span><span class="dot ${p.done ? "done" : ""}" title="${p.done ? "done" : "still writing"}"></span></li>`).join("");
+  el.innerHTML = v.players.map((p) => `<li><span class="av">${CHARS[charFor(p)]}<span><span class="who">${esc(p.name)}${p.me ? " (you)" : ""}</span>${p.bot ? `<span class="bio"><br>gossip · ${esc(p.bio)}</span>` : ""}</span></span><span class="dot ${p.done ? "done" : ""}" title="${p.done ? "done" : "still writing"}"></span></li>`).join("");
 }
 function renderLobby(v) {
   $("lobbycode").textContent = v.code; playerList($("lobbyplayers"), v);
@@ -302,7 +377,7 @@ function renderPass(v) {
   $("passhead").textContent = `Hop ${v.hop} of ${v.hops}. Something reached you.`;
   const secs = Math.max(5, 12 - (v.hop - 1) * 2);
   $("passsub").textContent = `Read it once. You get ${secs} seconds this hop${v.hop > 1 ? ", the line is getting faster" : ""}. Then it is gone, and what you pass on is what you remember.`;
-  $("passfrom").textContent = v.task.from;
+  $("passfrom").textContent = v.task.from; $("passwho").innerHTML = charByName(v, v.task.from);
   if (S.glanceKey !== key) {
     S.glanceKey = key; $("passinput").value = ""; startGlance(v.task.text, Math.max(5, 12 - (v.hop - 1) * 2));
   }
@@ -382,7 +457,7 @@ function renderReveal(v) {
     const score = m.said ? fidelity(T, R) : 0; memScore[m.name] = score;
     const ops = lcsOps(T, R);
     const marked = ops.map(([op, t]) => op === "=" ? esc(t.d) : op === "-" ? `<del>${esc(t.d)}</del>` : `<ins class="inv">${esc(t.d)}</ins>`).join(" ");
-    return `<div class="hop"><div class="by">${esc(m.name)}<small>remembered ${score}%${m.gapMs ? " after " + Math.max(1, Math.round(m.gapMs / 60000)) + " min" : ""}</small></div><div><div class="text" style="color:var(--mute);font-size:13px">was handed by ${esc(m.from || "?")}: ${esc(m.target)}</div><div class="text" style="margin-top:6px">${m.said ? marked : "<i>did not answer</i>"}</div><div class="bar"><i style="width:${score}%;background:var(--magenta)"></i></div></div></div>`;
+    return `<div class="hop"><div class="by">${charByName(v, m.name)}${esc(m.name)}<small>remembered ${score}%${m.gapMs ? " after " + Math.max(1, Math.round(m.gapMs / 60000)) + " min" : ""}</small></div><div><div class="text" style="color:var(--mute);font-size:13px">was handed by ${esc(m.from || "?")}: ${esc(m.target)}</div><div class="text" style="margin-top:6px">${m.said ? marked : "<i>did not answer</i>"}</div><div class="bar"><i style="width:${score}%;background:var(--magenta)"></i></div></div></div>`;
   }).join("") + `</div>` : "";
   $("chains").innerHTML = v.chains.map((ch, c) => {
     const an = analyses[c]; const orig = ch.versions[0], fin = ch.versions[ch.versions.length - 1];
@@ -396,7 +471,7 @@ function renderReveal(v) {
       </div>
       ${w && w.loss > 0 ? `<p class="worst">Bent most at hop ${an.worst + 1}, by ${esc(w.by)}: lost ${w.loss} points of fidelity in one pass.</p>` : ""}
       <h3>Hop by hop</h3>
-      ${an.hops.map((h, i) => `<div class="hop"><div class="by">${i + 1}. ${esc(h.by)}<small>${h.bot ? "gossip" : "player"} · ${h.fid}% intact${h.model === "fallback" ? " · offline gossip" : ""}</small></div><div><div class="text">${h.marked}</div><div class="tags">${h.exag.length ? `<span class="t-exag">exaggerated ${h.exag.length}</span>` : ""}${h.dropped.length ? `<span class="t-drop">dropped ${h.dropped.length}</span>` : ""}${h.invented.length ? `<span class="t-inv">invented ${h.invented.length}</span>` : ""}${!h.exag.length && !h.dropped.length && !h.invented.length ? `<span class="t-keep">kept it</span>` : ""}</div></div></div>`).join("")}
+      ${an.hops.map((h, i) => `<div class="hop"><div class="by">${charByName(v, h.by)}${i + 1}. ${esc(h.by)}<small>${h.bot ? "gossip" : "player"} · ${h.fid}% intact${h.model === "fallback" ? " · offline gossip" : ""}</small></div><div><div class="text">${h.marked}</div><div class="tags">${h.exag.length ? `<span class="t-exag">exaggerated ${h.exag.length}</span>` : ""}${h.dropped.length ? `<span class="t-drop">dropped ${h.dropped.length}</span>` : ""}${h.invented.length ? `<span class="t-inv">invented ${h.invented.length}</span>` : ""}${!h.exag.length && !h.dropped.length && !h.invented.length ? `<span class="t-keep">kept it</span>` : ""}</div></div></div>`).join("")}
       <div class="narr"><small>From the diff</small>${esc(mechanicalNarration(ch, an))}</div>
       <div class="narr" id="narr-${c}" style="border-color:var(--amber)"><small>The gossip columnist</small>${ch.narration ? esc(ch.narration) : `<span class="mute">writing…</span>`}</div>
     </div>`;
@@ -407,7 +482,7 @@ function renderReveal(v) {
     if (kept >= 90 && top <= 1) verdict = "the faithful";
     return { ...s, kept, verdict }; }).sort((a, b) => a.kept - b.kept);
   const bestMem = Math.max(0, ...Object.values(memScore));
-  $("ledger").innerHTML = `<tr><th>Who</th><th>Hops</th><th>Kept</th><th>Exaggerated</th><th>Dropped</th><th>Invented</th><th>Memory</th><th>Verdict</th></tr>` + rows.map((r) => { const m = memScore[r.name]; const mv = m !== undefined ? m + "%" + (m === bestMem && bestMem > 0 ? " ★" : "") : "<span class=\"mute\">-</span>"; const verdict = (m !== undefined && m === bestMem && bestMem >= 60) ? "sharpest memory" : r.verdict; return `<tr><td><b>${esc(r.name)}</b>${r.bot ? ` <span class="mute">gossip</span>` : ""}</td><td class="num">${r.hops}</td><td class="num">${r.kept}%</td><td class="num">${r.exag}</td><td class="num">${r.dropped}</td><td class="num">${r.invented}</td><td class="num">${mv}</td><td class="verdict">${verdict}</td></tr>`; }).join("");
+  $("ledger").innerHTML = `<tr><th>Who</th><th>Hops</th><th>Kept</th><th>Exaggerated</th><th>Dropped</th><th>Invented</th><th>Memory</th><th>Verdict</th></tr>` + rows.map((r) => { const m = memScore[r.name]; const mv = m !== undefined ? m + "%" + (m === bestMem && bestMem > 0 ? " ★" : "") : "<span class=\"mute\">-</span>"; const verdict = (m !== undefined && m === bestMem && bestMem >= 60) ? "sharpest memory" : r.verdict; return `<tr><td>${charByName(v, r.name)}<b>${esc(r.name)}</b>${r.bot ? ` <span class="mute">gossip</span>` : ""}</td><td class="num">${r.hops}</td><td class="num">${r.kept}%</td><td class="num">${r.exag}</td><td class="num">${r.dropped}</td><td class="num">${r.invented}</td><td class="num">${mv}</td><td class="verdict">${verdict}</td></tr>`; }).join("");
   S.record = { v, analyses };
   show("s-reveal");
   v.chains.forEach((ch, c) => { if (!ch.narration) narrate(c, ch, analyses[c]); });
@@ -444,6 +519,9 @@ $("chipleave").onclick = leave;
 $("chipcopy").onclick = () => copy(roomLink());
 $("lobbycopy").onclick = () => copy(roomLink());
 document.querySelector(".wordmark").addEventListener("click", (e) => { e.preventDefault(); leave(); });
+
+/* the crew on the front page, passing a note down the line */
+$("homeline").innerHTML = [["auny", "you"], ["mo", "Mo", "makes it bigger"], ["dee", "Dee", "loses a detail"], ["fabi", "Fabi", "adds what was never said"], ["sal", "Sal", "nearly gets it right"], ["rae", "Rae", "shifts the blame"]].map(([k, n, b], i) => (i ? `<span class="note">✎→</span>` : "") + `<span class="who">${CHARS[k]}${n}${b ? `<small>${b}</small>` : ""}</span>`).join("");
 
 /* deep link: ?room=CODE, and rejoin if this browser was already seated */
 (() => {
