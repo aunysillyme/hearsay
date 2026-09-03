@@ -146,7 +146,7 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
 <!-- HOME -->
 <section class="screen on" id="s-home">
   <h1>Every rumor has a chain of custody.<br><mark>This one shows it.</mark></h1>
-  <p class="lede">Two games about the same thing: what your memory does to a sentence. <b>The telephone game:</b> pass a message down the line. Everyone gets <b>one look</b> at what reached them, then retells it from memory. At the end, every version is laid out, every change is tagged <span class="stamp amber">exaggerated</span> <span class="stamp red">dropped</span> or <span class="stamp violet">invented</span>, and each one is pinned to the person who made it. <b>The memory ladder:</b> the whole room sees one sentence for a few seconds and types it back; accuracy is the score, and the levels climb until the line breaks.</p>
+  <p class="lede">Two games about the same thing: what your memory does to a sentence. <b>The telephone game:</b> you start a rumor and it passes through everyone in the room, one at a time. Everyone gets <b>one look</b> at what reached them, then retells it from memory. At the end, every version is laid out, every change is tagged <span class="stamp amber">exaggerated</span> <span class="stamp red">dropped</span> or <span class="stamp violet">invented</span>, and each one is pinned to the person who made it. <b>The memory ladder:</b> the whole room sees one sentence for a few seconds and types it back; accuracy is the score, and the levels climb until the line breaks.</p>
   <div class="card">
     <div class="row">
       <input id="name" placeholder="Your name" maxlength="24" style="max-width:240px" autocomplete="nickname">
@@ -166,16 +166,16 @@ td svg{width:26px;height:34px;vertical-align:middle;margin-right:4px}
   <div class="line" id="homeline"></div>
   <div class="steps">
     <div class="card"><b>1. One look</b>The version that reached you shows for twelve seconds, then it is gone, and the line gets faster every hop. Pasting is off. What you pass on is what you remember.</div>
-    <div class="card"><b>2. Every hop kept</b>The room keeps every version and shows you only yours. Nobody sees the chain until it is finished.</div>
+    <div class="card"><b>2. Every hop kept</b>One rumor, one line. The room keeps every version and hands you only the one that reached you. Nobody sees the chain until it is finished.</div>
     <div class="card"><b>3. The record</b>First, a memory test: retype the first message that ever reached you. Then original beside final, hop by hop: what got bigger, what fell off, what appeared from nowhere, and who did it.</div>
   </div>
-  <p class="mute">3 to 6 in a room. Everyone starts a rumor, and every rumor visits everyone else once, so nobody waits around. Short on people? Seat a gossip.</p>
+  <p class="mute">3 to 6 in a room. Whoever presses start writes the rumor; it visits everyone else once and comes back at the reveal. Short on people? Seat a gossip.</p>
 </section>
 
 <!-- LOBBY -->
 <section class="screen" id="s-lobby">
   <h2>The room is open.</h2>
-  <p>Send friends the link, or seat a gossip to fill a chair. Each gossip bends a message its own way, and the record will say so.</p>
+  <p>Send friends the link, or seat a gossip to fill a chair. Whoever presses start writes the rumor. Each gossip bends it its own way, and the record will say so.</p>
   <div class="card">
     <div class="row"><span class="mute">Room</span> <b style="font-family:var(--mono);font-size:26px;letter-spacing:.2em" id="lobbycode"></b> <button class="quiet" id="lobbycopy">copy link</button></div>
     <ul class="players" id="lobbyplayers"></ul>
@@ -380,7 +380,7 @@ async function poll() {
 function render(v) {
   if (v.me < 0 && v.phase !== "lobby") { toast("That room already started without you."); leave(); return; }
   if (v.phase === "lobby") return renderLobby(v);
-  if (v.phase === "seed") { if (v.seeded) return renderWait(v, "Your rumor is out."); $("seedcrew").textContent = "On the line with you: " + v.players.filter((p) => !p.me).map((p) => p.name + (p.bot ? " (" + p.bio + ")" : "")).join(", ") + "."; return show("s-seed"); }
+  if (v.phase === "seed") { if (!v.starter) return renderWait(v, `${v.starterName} is writing the rumor.`); if (v.seeded) return renderWait(v, "Your rumor is out."); $("seedcrew").textContent = "On the line with you: " + v.players.filter((p) => !p.me).map((p) => p.name + (p.bot ? " (" + p.bio + ")" : "")).join(", ") + "."; return show("s-seed"); }
   if (v.phase === "play") return (!v.task || v.task.passed) ? renderWait(v) : renderPass(v);
   if (v.phase === "ladder") return renderLadder(v);
   if (v.phase === "recall") return v.recall && v.recall.done ? renderWait(v, "Memory locked in.") : (stopGlance(), show("s-recall"));
@@ -396,9 +396,9 @@ function renderLobby(v) {
   stopGlance(); show("s-lobby");
 }
 function renderWait(v, head) {
-  $("waithead").textContent = head || `Hop ${v.hop} of ${v.hops}. You passed yours.`;
+  $("waithead").textContent = head || (v.phase === "play" ? `Hop ${v.hop} of ${v.hops}. The rumor is with ${v.holder}.` : "Waiting on the others.");
   const pending = v.players.filter((p) => p.done === false).map((p) => p.name);
-  $("waitnote").textContent = pending.length ? "Still writing: " + pending.join(", ") : "Everyone is in. Advancing…";
+  $("waitnote").textContent = v.phase === "play" ? `It has passed through ${v.hop - 1} of ${v.hops} people. You will see the whole chain at the reveal.` : pending.length ? "Still writing: " + pending.join(", ") : "Everyone is in. Advancing…";
   playerList($("waitplayers"), v); stopGlance(); show("s-wait");
 }
 function renderPass(v) {
@@ -521,7 +521,7 @@ function renderReveal(v) {
   if (S.rendered === sig) return; S.rendered = sig; stopGlance();
   const mins = v.startedAt && v.revealedAt ? Math.max(1, Math.round((v.revealedAt - v.startedAt) / 60000)) : null;
   $("revealhead").textContent = "The record.";
-  $("revealsub").textContent = `${v.chains.length} rumors, ${v.hops} hops each${mins ? `, ${mins} minute${mins > 1 ? "s" : ""} on the line` : ""}. Every version below is the one that person actually passed on.`;
+  $("revealsub").textContent = `${v.chains.length === 1 ? "One rumor" : v.chains.length + " rumors"}, ${v.hops} hops${mins ? `, ${mins} minute${mins > 1 ? "s" : ""} on the line` : ""}. Every version below is the one that person actually passed on.`;
   const stats = {}; v.players.forEach((p) => { stats[p.name] = { name: p.name, bot: p.bot, bio: p.bio, hops: 0, kept: 0, dropped: 0, invented: 0, exag: 0 }; });
   const analyses = v.chains.map(analyseChain);
   const memScore = {};

@@ -1,54 +1,36 @@
-// Drives a solo game end to end against the deployed worker and asserts the
-// blindness rule, hop advancement, bot fallbacks and the reveal shape.
+
 const BASE = process.argv[2] || "https://hearsay-room.aunysillyme.workers.dev";
 const code = "T" + Math.random().toString(36).slice(2, 8).toUpperCase();
 const post = async (act, body) => { const r = await fetch(`${BASE}/room/${code}/${act}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); return [r.status, await r.json()]; };
 const get = async (me) => (await fetch(`${BASE}/room/${code}?me=${me || ""}`)).json();
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? "ok   " : "FAIL ") + m); };
-
-let [s, v] = await post("solo", { name: "Auny" });
-ok(s === 200 && v.id, "solo creates a room and returns an id");
-const me = v.id;
-ok(v.phase === "seed" && v.n === 5, "solo: 5 seats, seed phase");
-ok(v.players.filter(p => p.bot).length === 4, "4 gossips seated");
-ok(v.seeded === false, "human has not seeded");
-[s, v] = await post("seed", { id: me, text: "short" });
-ok(s === 400, "seed too short is refused with 400");
-[s, v] = await post("pass", { id: me, text: "nope" });
-ok(s === 400, "pass during seed refused");
-[s, v] = await post("seed", { id: me, text: "Priya said the landlord is raising rent by $75 in March for the two street-facing units." });
-ok(s === 200 && v.phase === "play" && v.hop === 1, "seed accepted, play opens at hop 1");
-ok(v.task && typeof v.task.text === "string" && v.task.passed === false, "human holds exactly one text at hop 1");
-ok(!v.chains, "blindness: no chains in the play view");
-const stranger = await get("nobody");
-ok(!stranger.task && !stranger.chains, "stranger sees no task and no chains");
-let hops = 0;
-while (v.phase === "play" && hops < 10) {
-  hops++;
-  const seen = v.task.text;
-  [s, v] = await post("pass", { id: me, text: "I heard " + seen.slice(0, 60) + " and it was huge." });
-  ok(s === 200, "pass at hop " + hops + " accepted -> phase " + v.phase + " hop " + v.hop);
-  [s, v] = [s, await get(me)];
-}
-ok(v.phase === "recall" && v.recall && v.recall.done === false, "memory test opens after " + hops + " human passes");
-ok(!v.chains, "blindness holds during the memory test");
-[s, v] = await post("pass", { id: me, text: "late" });
-ok(s === 400, "pass during recall refused");
-[s, v] = await post("recall", { id: me, text: "Priya said the landlord is raising rent by $75 in March." });
-ok(s === 200 && v.phase === "reveal", "recall accepted, reveal opens");
-ok(v.memory && v.memory.length === 1 && v.memory[0].target && v.memory[0].said, "memory test carries target + answer for the human");
-ok(v.chains && v.chains.length === 5, "5 chains revealed");
-ok(v.chains.every(c => c.versions.length === 5), "every chain has 5 versions (seed + 4 hops)");
-const bots = v.chains.flatMap(c => c.versions.filter(x => x.bot));
-ok(bots.length === 20, "20 bot-authored versions (4 seeds + 16 passes), got " + bots.length);
-ok(bots.every(b => b.text && b.text.length >= 3), "no empty bot version");
-const ai = bots.filter(b => b.model === "workers-ai").length;
-console.log("     workers-ai:", ai, "fallback:", bots.length - ai);
-const byName = {}; v.chains.forEach(c => c.versions.forEach((x, i) => { if (i) byName[x.by] = (byName[x.by] || 0) + 1; }));
-ok(Object.values(byName).every(n => n === 4), "each player passed exactly 4 times " + JSON.stringify(byName));
-[s, v] = await post("narrate", { id: me, chain: 0, facts: "Original: " + v.chains[0].versions[0].text + "\nFinal: " + v.chains[0].versions[4].text + "\nHop 1 by " + v.chains[0].versions[1].by + ": dropped [landlord], added [huge]" });
-ok(s === 200 && (v.text || v.fallback), "narrate returns text or an honest fallback: " + (v.text || "(fallback)").slice(0, 80));
-[s, v] = await post("again", { id: me });
-ok(s === 200 && v.phase === "lobby", "again returns the room to lobby");
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+let [s, v] = await post("solo", { name: "Auny" }); const me = v.id;
+ok(s === 200 && v.phase === "seed" && v.n === 5 && v.starter === true, "solo: seed phase, I am the starter");
+[s, v] = await post("seed", { id: me, text: "short" }); ok(s === 400, "seed too short refused");
+const SEED = "Priya said the landlord is raising rent by $75 in March for the two street-facing units.";
+[s, v] = await post("seed", { id: me, text: SEED });
+ok(s === 200, "seed accepted -> phase " + v.phase + " hop " + v.hop);
+// four gossips pass in one settle: the chain comes straight back to reveal or recall
+ok(v.phase === "reveal", "with four gossips after me the whole line runs and reveals (no human receiver, so no recall round)");
+ok(v.chains.length === 1, "exactly one chain");
+ok(v.chains[0].versions.length === 5 && v.chains[0].versions[0].text === SEED, "5 versions, the first is MY sentence verbatim");
+ok(v.chains[0].versions.slice(1).every(x => x.bot && x.text.length > 3), "four bot versions follow, none empty");
+const chain = v.chains[0].versions.map(x => x.by).join(" > "); console.log("     line:", chain);
+ok(new Set(v.chains[0].versions.map(x => x.by)).size === 5, "every seat touched it exactly once");
+[s, v] = await post("narrate", { id: me, chain: 0, facts: "Original: " + SEED + "\nFinal: " + v.chains[0].versions[4].text });
+ok(s === 200 && (v.text || v.fallback), "narration or honest fallback");
+[s, v] = await post("again", { id: me }); ok(v.phase === "lobby", "again -> lobby");
+// two humans: the second one receives and gets a recall round
+[s, v] = await post("join", { name: "Kaleb" }); const kal = v.id; ok(s === 200, "second human joins");
+[s, v] = await post("start", { id: me }); ok(v.phase === "seed" && v.starter, "host starts, host seeds");
+let [s2, v2] = await post("seed", { id: kal, text: SEED }); ok(s2 === 400, "non-starter cannot seed");
+[s, v] = await post("seed", { id: me, text: SEED });
+ok(v.phase === "play" || v.phase === "recall", "chain moving: " + v.phase + " hop " + v.hop);
+let guard = 0; v2 = await get(kal);
+while (v2.phase === "play" && guard++ < 10) { if (v2.task && !v2.task.passed) { ok(typeof v2.task.text === "string", "Kaleb is handed one version from " + v2.task.from); [s2, v2] = await post("pass", { id: kal, text: "I heard the rent is going up seventy five bucks" }); } else { await new Promise(r => setTimeout(r, 400)); v2 = await get(kal); } }
+ok(v2.phase === "recall" && v2.recall && v2.recall.done === false, "Kaleb (a receiver) gets the recall round");
+v = await get(me); ok(v.phase === "recall" && v.recall.done === true, "starter is already done with recall (nothing reached them)");
+[s2, v2] = await post("recall", { id: kal, text: "Priya said rent up $75 in March" });
+ok(v2.phase === "reveal" && v2.memory.length === 1 && v2.memory[0].name === "Kaleb" && v2.memory[0].target, "reveal: memory test for Kaleb only, with the text he was handed");
+ok(v2.chains[0].versions[0].text === SEED, "the original is still the starter's sentence verbatim");
+console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

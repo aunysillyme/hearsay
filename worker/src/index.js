@@ -182,7 +182,7 @@ export class Room {
   }
 
   holder(r, c, h) {
-    return (c + h) % r.players.length;
+    return ((r.chains[c] ? r.chains[c].seedBy : c) + h) % r.players.length;
   }
 
   async act(r, act, body) {
@@ -215,7 +215,7 @@ export class Room {
       const id = crypto.randomUUID();
       r.players.push({ id, name, bot: false, joinedAt: Date.now() });
       for (const b of BOTS.slice(0, 4)) r.players.push({ id: crypto.randomUUID(), name: b.name, bot: true, persona: b.persona, bio: b.bio, joinedAt: Date.now() });
-      if (body.ladder) r.phase = "lobby"; else this.begin(r);
+      if (body.ladder) r.phase = "lobby"; else this.begin(r, id);
       return { id, ...this.view(r, id) };
     }
 
@@ -224,7 +224,7 @@ export class Room {
     if (act === "start") {
       if (r.phase !== "lobby") return { error: "Already started." };
       if (r.players.length < 3) return { error: "Need at least 3 in the room. Add a gossip if you are short." };
-      this.begin(r);
+      this.begin(r, body.id);
       return this.view(r, body.id);
     }
 
@@ -232,8 +232,9 @@ export class Room {
       if (r.phase !== "seed") return { error: "Not the time to start a rumor." };
       const text = this.clean(body.text);
       if (text.length < 8) return { error: "Give the rumor some substance. A name, a number, a place." };
-      if (r.chains[me].versions.length) return { error: "You already started yours." };
-      r.chains[me].versions.push({ by: me, text, at: Date.now() });
+      if (r.chains[0].seedBy !== me) return { error: "Someone else is starting this one. Sit tight." };
+      if (r.chains[0].versions.length) return { error: "You already started it." };
+      r.chains[0].versions.push({ by: me, text, at: Date.now() });
       await this.settle(r);
       return this.view(r, body.id);
     }
@@ -257,7 +258,7 @@ export class Room {
       const text = this.clean(body.text);
       if (text.length < 3) return { error: "Whatever you remember. Even a fragment counts." };
       r.recall[me] = { text, at: Date.now() };
-      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
+      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot && i !== r.chains[0].seedBy);
       if (humans.every((i) => r.recall[i])) { r.phase = "reveal"; r.revealedAt = Date.now(); }
       return this.view(r, body.id);
     }
@@ -330,22 +331,19 @@ export class Room {
     return { error: "Unknown action." };
   }
 
-  begin(r) {
+  begin(r, starterId) {
     // Shuffle seating so the same human is not always followed by the same bot.
     r.players.sort(() => Math.random() - 0.5);
+    let starter = r.players.findIndex((p) => p.id === starterId);
+    if (starter < 0) starter = r.players.findIndex((p) => !p.bot);
+    if (starter < 0) starter = 0;
     r.phase = "seed";
     r.hop = 0;
     r.narr = {};
     r.recall = {};
-    r.chains = r.players.map((p, i) => ({ seedBy: i, versions: [] }));
-    const used = new Set();
-    r.players.forEach((p, i) => {
-      if (p.bot) {
-        let s; do { s = SEEDS[Math.floor(Math.random() * SEEDS.length)]; } while (used.has(s) && used.size < SEEDS.length);
-        used.add(s);
-        r.chains[i].versions.push({ by: i, text: s, at: Date.now() });
-      }
-    });
+    // ONE rumor per game, started by the person who pressed start. It visits
+    // everyone else once, in seating order, and comes back at the reveal.
+    r.chains = [{ seedBy: starter, versions: [] }];
     r.startedAt = Date.now();
   }
 
@@ -361,7 +359,8 @@ export class Room {
         r.hop++;
         if (r.hop >= N) {
           r.recall = r.recall || {};
-          if (r.players.some((p) => !p.bot)) { r.phase = "recall"; r.recallAt = Date.now(); }
+          const receivers = r.players.map((p, i) => i).filter((i) => !r.players[i].bot && i !== r.chains[0].seedBy);
+          if (receivers.length) { r.phase = "recall"; r.recallAt = Date.now(); }
           else { r.phase = "reveal"; r.revealedAt = Date.now(); }
           return;
         }
@@ -439,15 +438,15 @@ export class Room {
     const mi = me ? r.players.findIndex((p) => p.id === me) : -1;
     const players = r.players.map((p, i) => {
       let done = null;
-      if (r.phase === "seed") done = r.chains[i].versions.length > 0;
+      if (r.phase === "seed") done = i === r.chains[0].seedBy ? r.chains[0].versions.length > 0 : null;
       if (r.phase === "play") {
         const c = r.chains.findIndex((ch, ci) => this.holder(r, ci, r.hop) === i);
         done = c >= 0 ? r.chains[c].versions.length > r.hop : null;
       }
       return { name: p.name, bot: p.bot, bio: p.bio || null, done, me: i === mi };
     });
-    const v = { code: r.code, phase: r.phase, hop: r.hop, hops: Math.max(0, N - 1), n: N, game: r.game, players, me: mi, host: mi === 0 || (mi >= 0 && !r.players.some((p, i) => !p.bot && i < mi)) };
-    if (mi >= 0 && r.phase === "seed") v.seeded = r.chains[mi].versions.length > 0;
+    const v = { code: r.code, phase: r.phase, hop: r.hop, hops: Math.max(0, N - 1), n: N, holder: r.phase === "play" && r.chains[0] ? r.players[this.holder(r, 0, r.hop)].name : null, game: r.game, players, me: mi, host: mi === 0 || (mi >= 0 && !r.players.some((p, i) => !p.bot && i < mi)) };
+    if (mi >= 0 && r.phase === "seed") { v.seeded = r.chains[0].versions.length > 0; v.starter = r.chains[0].seedBy === mi; v.starterName = r.players[r.chains[0].seedBy].name; }
     if (mi >= 0 && r.phase === "play") {
       const c = r.chains.findIndex((ch, ci) => this.holder(r, ci, r.hop) === mi);
       if (c >= 0) {
@@ -474,17 +473,19 @@ export class Room {
       players.forEach((p, i) => { p.done = r.players[i].bot || !L.participants.includes(i) ? null : !!L.answers[i]; });
     }
     if (r.phase === "recall") {
-      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot);
-      v.recall = { done: mi >= 0 && !!(r.recall || {})[mi], pending: humans.filter((i) => !(r.recall || {})[i]).map((i) => r.players[i].name) };
-      players.forEach((p, i) => { p.done = r.players[i].bot ? null : !!(r.recall || {})[i]; });
+      const humans = r.players.map((p, i) => i).filter((i) => !r.players[i].bot && i !== r.chains[0].seedBy);
+      v.recall = { done: mi >= 0 && (!!(r.recall || {})[mi] || mi === r.chains[0].seedBy), pending: humans.filter((i) => !(r.recall || {})[i]).map((i) => r.players[i].name) };
+      players.forEach((p, i) => { p.done = r.players[i].bot || i === r.chains[0].seedBy ? null : !!(r.recall || {})[i]; });
     }
     if (r.phase === "reveal") {
       v.memory = r.players.map((p, i) => {
         if (p.bot) return null;
-        const c = r.chains.findIndex((ch, ci) => this.holder(r, ci, 1) === i);
-        const target = c >= 0 && r.chains[c].versions[0] ? r.chains[c].versions[0].text : null;
+        const ch = r.chains[0]; if (!ch || i === ch.seedBy) return null;
+        const h = (i - ch.seedBy + r.players.length) % r.players.length;
+        const handed = ch.versions[h - 1];
+        const target = handed ? handed.text : null;
         const rec = (r.recall || {})[i];
-        return { name: p.name, target, from: c >= 0 ? r.players[r.chains[c].seedBy].name : null, said: rec ? rec.text : null, gapMs: rec && r.startedAt ? rec.at - r.startedAt : null };
+        return { name: p.name, target, from: handed ? r.players[handed.by].name : null, said: rec ? rec.text : null, gapMs: rec && r.startedAt ? rec.at - r.startedAt : null };
       }).filter(Boolean);
       v.chains = r.chains.map((ch, c) => ({
         chain: c,
