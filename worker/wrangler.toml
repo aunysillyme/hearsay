@@ -1,0 +1,19 @@
+name = "hearsay-room"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# One room per Durable Object, addressed by name, so idFromName(CODE) is the
+# whole room system - no database, no schema.
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+# The gossip bots and the closing narration. Keep this binding in the
+# committed config: a deployed worker with a binding the repo does not carry
+# means a clean redeploy silently ships a degraded build.
+[ai]
+binding = "AI"
